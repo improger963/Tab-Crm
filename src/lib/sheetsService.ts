@@ -310,23 +310,42 @@ export async function readOrdersFromSheet(
   sheetName: string,
   accessToken: string
 ): Promise<{ orders: Order[]; headers: string[]; rawRows: string[][]; sheetName: string }> {
-  if (!accessToken) {
+  if (!spreadsheetId) {
+    throw new Error('Spreadsheet ID or Script URL is missing.');
+  }
+
+  const isDirectMode = spreadsheetId.startsWith('https://') || accessToken === 'direct_apps_script';
+
+  if (!isDirectMode && !accessToken) {
     throw new Error('Google access token is missing. Please click "Reconnect Google Account".');
   }
-  if (!spreadsheetId) {
-    throw new Error('Spreadsheet ID is missing.');
-  }
-  try {
-    const range = `${sheetName}!A1:N1000`;
-    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    await checkGoogleResponse(res, 'Failed to read values from sheet');
 
-    const data = await res.json();
-    const rows: string[][] = data.values || [];
+  try {
+    let rows: string[][] = [];
+    let activeSheetName = sheetName || 'Sheet1';
+
+    if (isDirectMode) {
+      const url = spreadsheetId.startsWith('https://') ? spreadsheetId : accessToken;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch from Apps Script Web App: ${res.statusText}`);
+      }
+      rows = await res.json();
+    } else {
+      const range = `${sheetName}!A1:N1000`;
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      await checkGoogleResponse(res, 'Failed to read values from sheet');
+
+      const data = await res.json();
+      rows = data.values || [];
+    }
 
     if (rows.length === 0) {
+      if (isDirectMode) {
+        return { orders: [], headers: HEADERS, rawRows: [HEADERS], sheetName: activeSheetName };
+      }
       // Empty sheet, initialize headers
       await initializeHeaders(spreadsheetId, sheetName, accessToken);
       return { orders: [], headers: HEADERS, rawRows: [HEADERS], sheetName };
@@ -428,15 +447,34 @@ export async function addOrderToSheet(
   order: Order,
   accessToken: string
 ): Promise<void> {
-  if (!accessToken) {
+  if (!spreadsheetId) {
+    throw new Error('Spreadsheet ID or Script URL is missing.');
+  }
+
+  const isDirectMode = spreadsheetId.startsWith('https://') || accessToken === 'direct_apps_script';
+
+  if (!isDirectMode && !accessToken) {
     throw new Error('Google access token is missing. Please click "Reconnect Google Account".');
   }
-  if (!spreadsheetId) {
-    throw new Error('Spreadsheet ID is missing.');
-  }
+
   try {
+    const row = buildOrderRow(order);
+
+    if (isDirectMode) {
+      const url = spreadsheetId.startsWith('https://') ? spreadsheetId : accessToken;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'append', values: row })
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to write to Apps Script Web App: ${res.statusText}`);
+      }
+      return;
+    }
+
     const range = `${sheetName}!A:N`;
-    const values = [buildOrderRow(order)];
+    const values = [row];
 
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`, {
       method: 'POST',
@@ -468,15 +506,34 @@ export async function updateOrderInSheet(
   rowIndex: number,
   accessToken: string
 ): Promise<void> {
-  if (!accessToken) {
+  if (!spreadsheetId) {
+    throw new Error('Spreadsheet ID or Script URL is missing.');
+  }
+
+  const isDirectMode = spreadsheetId.startsWith('https://') || accessToken === 'direct_apps_script';
+
+  if (!isDirectMode && !accessToken) {
     throw new Error('Google access token is missing. Please click "Reconnect Google Account".');
   }
-  if (!spreadsheetId) {
-    throw new Error('Spreadsheet ID is missing.');
-  }
+
   try {
+    const row = buildOrderRow(order);
+
+    if (isDirectMode) {
+      const url = spreadsheetId.startsWith('https://') ? spreadsheetId : accessToken;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', rowIndex, values: row })
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to update row via Apps Script Web App: ${res.statusText}`);
+      }
+      return;
+    }
+
     const range = `${sheetName}!A${rowIndex}:N${rowIndex}`;
-    const values = [buildOrderRow(order)];
+    const values = [row];
 
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
@@ -507,18 +564,37 @@ export async function overwriteAllOrdersInSheet(
   orders: Order[],
   accessToken: string
 ): Promise<void> {
-  if (!accessToken) {
+  if (!spreadsheetId) {
+    throw new Error('Spreadsheet ID or Script URL is missing.');
+  }
+
+  const isDirectMode = spreadsheetId.startsWith('https://') || accessToken === 'direct_apps_script';
+
+  if (!isDirectMode && !accessToken) {
     throw new Error('Google access token is missing. Please click "Reconnect Google Account".');
   }
-  if (!spreadsheetId) {
-    throw new Error('Spreadsheet ID is missing.');
-  }
+
   try {
+    const values = [HEADERS, ...orders.map(buildOrderRow)];
+
+    if (isDirectMode) {
+      const url = spreadsheetId.startsWith('https://') ? spreadsheetId : accessToken;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'overwrite', values })
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to overwrite sheet via Apps Script Web App: ${res.statusText}`);
+      }
+      return;
+    }
+
     // 1. Re-initialize headers at A1:N1
     await initializeHeaders(spreadsheetId, sheetName, accessToken);
 
-    // 2. Prepare the rows
-    const values = orders.map(buildOrderRow);
+    // 2. Prepare rows under headers
+    const rowValues = orders.map(buildOrderRow);
 
     // 3. Clear existing values under headers (A2:N1000)
     const clearRange = `${sheetName}!A2:N1000`;
@@ -528,10 +604,10 @@ export async function overwriteAllOrdersInSheet(
     });
     await checkGoogleResponse(clearRes, 'Failed to clear existing sheet rows');
 
-    if (values.length === 0) return;
+    if (rowValues.length === 0) return;
 
     // 4. Put the new values at A2:N...
-    const writeRange = `${sheetName}!A2:N${1 + values.length}`;
+    const writeRange = `${sheetName}!A2:N${1 + rowValues.length}`;
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(writeRange)}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
       headers: {
@@ -539,7 +615,7 @@ export async function overwriteAllOrdersInSheet(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        values,
+        values: rowValues,
       }),
     });
     await checkGoogleResponse(res, 'Failed to overwrite all orders');

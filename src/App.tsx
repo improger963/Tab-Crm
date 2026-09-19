@@ -90,8 +90,24 @@ export default function App() {
   const { toasts, addToast, removeToast } = useToast();
 
   // Google Sheets integration state values
-  const [googleUser, setGoogleUser] = useState<any>(null);
-  const [googleToken, setGoogleToken] = useState<string>('');
+  const [googleUser, setGoogleUser] = useState<any>(() => {
+    if (localStorage.getItem('is_direct_apps_script') === 'true') {
+      return { email: 'apps.script@direct', displayName: 'Direct Sheet (Apps Script)' };
+    }
+    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
+      return { email: 'api@direct.google', displayName: 'Google API (Auto-Refresh)' };
+    }
+    return null;
+  });
+  const [googleToken, setGoogleToken] = useState<string>(() => {
+    if (localStorage.getItem('is_direct_apps_script') === 'true') {
+      return 'direct_apps_script';
+    }
+    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
+      return localStorage.getItem('google_access_token') || 'temp_refreshing';
+    }
+    return '';
+  });
   const [spreadsheets, setSpreadsheets] = useState<{ id: string; name: string }[]>([]);
   const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string>(() => {
     return localStorage.getItem('logiconnect_spreadsheet_id') || '';
@@ -109,15 +125,93 @@ export default function App() {
   const [customClientId, setCustomClientId] = useState<string>(() => {
     return localStorage.getItem('custom_google_client_id') || '';
   });
+  const apiClientId = customClientId;
+  const setApiClientId = setCustomClientId;
+  const [appsScriptInput, setAppsScriptInput] = useState<string>(() => {
+    return localStorage.getItem('logiconnect_spreadsheet_id')?.startsWith('https://') 
+      ? localStorage.getItem('logiconnect_spreadsheet_id') || ''
+      : '';
+  });
+
+  const [apiClientSecret, setApiClientSecret] = useState<string>(() => {
+    return localStorage.getItem('google_client_secret') || '';
+  });
+  const [apiRefreshToken, setApiRefreshToken] = useState<string>(() => {
+    return localStorage.getItem('google_refresh_token') || '';
+  });
+  const [apiSpreadsheetId, setApiSpreadsheetId] = useState<string>(() => {
+    const sId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
+    return sId.startsWith('https://') ? '' : sId;
+  });
+
+  // Helper to exchange Refresh Token for a fresh Access Token using official REST API
+  const refreshGoogleAccessToken = async (): Promise<string> => {
+    const rToken = localStorage.getItem('google_refresh_token');
+    const cId = localStorage.getItem('custom_google_client_id');
+    const cSecret = localStorage.getItem('google_client_secret');
+    
+    if (!rToken || !cId || !cSecret) {
+      throw new Error('Refresh token config parameters (Client ID, Client Secret, Refresh Token) are missing in storage.');
+    }
+    
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: cId,
+        client_secret: cSecret,
+        refresh_token: rToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+    
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Token refresh failed: ${errBody}`);
+    }
+    
+    const data = await res.json();
+    if (data.access_token) {
+      setGoogleToken(data.access_token);
+      localStorage.setItem('google_access_token', data.access_token);
+      return data.access_token;
+    } else {
+      throw new Error('Access token not found in Google OAuth response');
+    }
+  };
 
   // Unified handler for Google Sheets API errors
-  const handleGoogleApiError = (err: any, customPrefix: string) => {
+  const handleGoogleApiError = async (err: any, customPrefix: string) => {
     console.error(`${customPrefix}:`, err);
     const errMsg = String(err.message || err).toLowerCase();
     if (errMsg.includes('401') || errMsg.includes('credentials') || errMsg.includes('expired') || errMsg.includes('token')) {
+      if (localStorage.getItem('is_refresh_token_mode') === 'true') {
+        try {
+          console.log('Attempting automatic OAuth Token refresh...');
+          const newToken = await refreshGoogleAccessToken();
+          addToast('success', 'Google API Token-ը ավտոմատ թարմացվեց (Refresh Token-ով)։');
+          // Trigger a silent reload of orders to make sure we are synced
+          const sId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
+          const sTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
+          if (sId) {
+            const res = await readOrdersFromSheet(sId, sTitle, newToken);
+            if (res && res.orders) {
+              setOrders(res.orders);
+              localStorage.setItem('crm_orders', JSON.stringify(res.orders));
+            }
+          }
+          return;
+        } catch (refreshErr) {
+          console.error('Automated token refresh failed:', refreshErr);
+        }
+      }
       setGoogleToken('');
       clearCachedToken();
       addToast('delete', 'Google հաշվի կապն ընդհատվել է (լրացել է ժամկետը)։ Խնդրում ենք նորից միացնել Sheets-ը։');
+      setActiveView('google-sheets');
+      setShowManualTokenForm(true);
     } else {
       addToast('delete', `${customPrefix}՝ ${err.message || err}`);
     }
@@ -177,6 +271,9 @@ export default function App() {
 
   // Listen to Google/Firebase auth session state
   useEffect(() => {
+    if (localStorage.getItem('is_direct_apps_script') === 'true' || localStorage.getItem('is_refresh_token_mode') === 'true') {
+      return;
+    }
     const unsubscribe = initAuth(
       (user, token) => {
         setGoogleUser(user);
@@ -186,11 +283,37 @@ export default function App() {
         }
       },
       () => {
+        if (localStorage.getItem('is_direct_apps_script') === 'true' || localStorage.getItem('is_refresh_token_mode') === 'true') return;
         setGoogleUser(null);
         setGoogleToken('');
       }
     );
     return () => unsubscribe();
+  }, []);
+
+  // Exchange Refresh Token on App Startup if Refresh Token Mode is enabled
+  useEffect(() => {
+    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
+      refreshGoogleAccessToken()
+        .then(token => {
+          const storedId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
+          const storedTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
+          if (storedId) {
+            readOrdersFromSheet(storedId, storedTitle, token)
+              .then(res => {
+                if (res && res.orders) {
+                  setOrders(res.orders);
+                  localStorage.setItem('crm_orders', JSON.stringify(res.orders));
+                }
+              })
+              .catch(err => console.warn('Auto initial read error under refresh token mode:', err));
+          }
+        })
+        .catch(err => {
+          console.error('Initial refresh token exchange failed on boot:', err);
+          addToast('delete', 'Չհաջողվեց թարմացնել Google API Token-ը։ Ստուգեք Client ID, Client Secret և Refresh Token-ը։');
+        });
+    }
   }, []);
 
   // Periodic background polling (Real-time sync from Google Sheets every 15 seconds)
@@ -498,16 +621,127 @@ export default function App() {
     setCustomClientId(val);
   };
 
+  const handleAppsScriptConnect = async () => {
+    const url = appsScriptInput.trim();
+    if (!url) {
+      addToast('warning', 'Խնդրում ենք մուտքագրել Google Apps Script Web App URL-ը։');
+      return;
+    }
+    if (!url.startsWith('https://')) {
+      addToast('warning', 'URL-ը պետք է սկսվի https://-ով։');
+      return;
+    }
+    setSpreadsheetLoading(true);
+    try {
+      // Test read values
+      const res = await readOrdersFromSheet(url, 'Sheet1', 'direct_apps_script');
+      if (res && Array.isArray(res.orders)) {
+        localStorage.setItem('is_direct_apps_script', 'true');
+        localStorage.setItem('logiconnect_spreadsheet_id', url);
+        localStorage.setItem('logiconnect_spreadsheet_name', 'Direct Sheet (No Auth)');
+        localStorage.setItem('logiconnect_sheet_title', 'Sheet1');
+
+        setGoogleUser({ email: 'apps.script@direct', displayName: 'Direct Sheet (Apps Script)' });
+        setGoogleToken('direct_apps_script');
+        setSelectedSpreadsheetId(url);
+        setSelectedSpreadsheetName('Direct Sheet (No Auth)');
+        setSelectedSheetTitle('Sheet1');
+
+        if (res.orders.length > 0) {
+          setOrders(res.orders);
+          localStorage.setItem('crm_orders', JSON.stringify(res.orders));
+        }
+
+        addToast('success', 'Google Sheet-ը հաջողությամբ միացվեց ԱՌԱՆՑ Google Auth-ի (Direct Mode)։');
+        setShowManualTokenForm(false);
+      } else {
+        throw new Error('No orders array returned from Google Sheet.');
+      }
+    } catch (err: any) {
+      addToast('delete', `Միացման սխալ։ Համոզվեք, որ Apps Script-ը ճիշտ է տեղադրված և հասանելիությունը դրված է «Anyone» (Բոլորին)։ Սխալ՝ ${err.message || err}`);
+    } finally {
+      setSpreadsheetLoading(false);
+    }
+  };
+
   const handleGoogleDisconnect = async () => {
     setSpreadsheetLoading(true);
     try {
-      await logout();
+      localStorage.removeItem('is_direct_apps_script');
+      localStorage.removeItem('is_refresh_token_mode');
+      localStorage.removeItem('google_refresh_token');
+      localStorage.removeItem('google_client_secret');
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('logiconnect_spreadsheet_id');
+      localStorage.removeItem('logiconnect_spreadsheet_name');
+      localStorage.removeItem('logiconnect_sheet_title');
+      await logout().catch(() => {});
       setGoogleUser(null);
       setGoogleToken('');
       setSpreadsheets([]);
-      addToast('delete', 'Google հաշիվն անջատվեց');
+      setAppsScriptInput('');
+      setApiClientSecret('');
+      setApiRefreshToken('');
+      setApiSpreadsheetId('');
+      addToast('delete', 'Google Sheets կապն անջատվեց');
     } catch (err: any) {
       addToast('delete', `Անջատման սխալ՝ ${err.message || err}`);
+    } finally {
+      setSpreadsheetLoading(false);
+    }
+  };
+
+  const handleRefreshTokenConnect = async () => {
+    const cId = apiClientId.trim();
+    const cSecret = apiClientSecret.trim();
+    const rToken = apiRefreshToken.trim();
+    const sId = apiSpreadsheetId.trim();
+
+    if (!cId || !cSecret || !rToken || !sId) {
+      addToast('warning', 'Խնդրում ենք լրացնել բոլոր 4 դաշտերը (Client ID, Client Secret, Refresh Token, Spreadsheet ID)։');
+      return;
+    }
+
+    setSpreadsheetLoading(true);
+    try {
+      // 1. Store configs temporarily
+      localStorage.setItem('custom_google_client_id', cId);
+      localStorage.setItem('google_client_secret', cSecret);
+      localStorage.setItem('google_refresh_token', rToken);
+
+      // 2. Test Refresh token exchange
+      const accessToken = await refreshGoogleAccessToken();
+
+      // 3. Get sheet metadata
+      const sheetTitle = await getFirstSheetTitle(sId, accessToken).catch(() => 'Sheet1');
+
+      // 4. Save and set state
+      localStorage.setItem('is_refresh_token_mode', 'true');
+      localStorage.removeItem('is_direct_apps_script');
+      localStorage.setItem('logiconnect_spreadsheet_id', sId);
+      localStorage.setItem('logiconnect_spreadsheet_name', 'Direct API (Auto-Refresh)');
+      localStorage.setItem('logiconnect_sheet_title', sheetTitle);
+
+      setGoogleUser({ email: 'api@direct.google', displayName: 'Google API (Auto-Refresh)' });
+      setGoogleToken(accessToken);
+      setSelectedSpreadsheetId(sId);
+      setSelectedSpreadsheetName('Direct API (Auto-Refresh)');
+      setSelectedSheetTitle(sheetTitle);
+
+      // 5. Initial load
+      const res = await readOrdersFromSheet(sId, sheetTitle, accessToken);
+      if (res && res.orders) {
+        setOrders(res.orders);
+        localStorage.setItem('crm_orders', JSON.stringify(res.orders));
+      }
+
+      addToast('success', 'Google Sheet-ը հաջողությամբ միացվեց Պաշտոնական API-ով (առանց Script-ի)։');
+      setShowManualTokenForm(false);
+    } catch (err: any) {
+      localStorage.removeItem('is_refresh_token_mode');
+      localStorage.removeItem('google_refresh_token');
+      localStorage.removeItem('google_client_secret');
+      addToast('delete', `Կապակցման սխալ։ Ստուգեք մուտքագրված տվյալները և Sheets-ի հասանելիությունը։ Սխալ՝ ${err.message || err}`);
     } finally {
       setSpreadsheetLoading(false);
     }
@@ -1434,12 +1668,162 @@ export default function App() {
 
                       {showManualTokenForm && (
                         <div className="w-full mt-6 p-5 bg-slate-50 rounded-2xl border border-slate-200/80 text-left space-y-5">
-                          <div className="space-y-3">
+                          {/* 🌟 Official Google Sheets API (via Refresh Token) - NO SCRIPTS */}
+                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-150 rounded-2xl p-5 space-y-4">
+                            <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                              🔑 Պաշտոնական Google API (Առանց Apps Script-ի — Մշտական & Անվտանգ)
+                            </p>
+                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                              Միացեք պաշտոնական Google Sheets API-ով՝ առանց որևէ script տեղադրելու։ Լրացրեք ձեր Google API տվյալները, և համակարգը կապահովի մշտական ավտոմատ թարմացում (Auto-Refresh) առանց pop-up-ների խնդիրների։
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Client ID</label>
+                                <input
+                                  type="text"
+                                  placeholder="854020054293-...apps.googleusercontent.com"
+                                  value={apiClientId}
+                                  onChange={(e) => {
+                                    setApiClientId(e.target.value);
+                                    setCustomClientId(e.target.value);
+                                  }}
+                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Client Secret</label>
+                                <input
+                                  type="password"
+                                  placeholder="GOCSPX-..."
+                                  value={apiClientSecret}
+                                  onChange={(e) => setApiClientSecret(e.target.value)}
+                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">OAuth Refresh Token</label>
+                                <input
+                                  type="password"
+                                  placeholder="1//0..."
+                                  value={apiRefreshToken}
+                                  onChange={(e) => setApiRefreshToken(e.target.value)}
+                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Sheet ID (կամ URL)</label>
+                                <input
+                                  type="text"
+                                  placeholder="1BxiMVs0XRA5nFMdKv136..."
+                                  value={apiSpreadsheetId}
+                                  onChange={(e) => {
+                                    let val = e.target.value.trim();
+                                    if (val.includes('/d/')) {
+                                      const matches = val.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                                      if (matches && matches[1]) val = matches[1];
+                                    }
+                                    setApiSpreadsheetId(val);
+                                  }}
+                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1 text-[10.5px] text-slate-650 bg-white/60 p-3.5 rounded-xl border border-emerald-100">
+                              <p className="font-bold text-emerald-950 mb-1">📋 Ինչպե՞ս ստանալ Refresh Token 30 վայրկյանում.</p>
+                              <ol className="list-decimal list-inside space-y-1 leading-relaxed">
+                                <li>Բացեք <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noreferrer" className="text-emerald-700 font-bold underline">Google OAuth Playground</a>-ը:</li>
+                                <li>Աջ վերևի անկյունում սեղմեք <strong>Gear icon (Կարգավորումներ)</strong>, նշեք <strong>"Use your own OAuth credentials"</strong>, լրացրեք ձեր Client ID և Client Secret-ը։</li>
+                                <li>Ձախ կողմում <strong>Step 1</strong>-ում մուտքագրեք <code>https://www.googleapis.com/auth/spreadsheets</code> և սեղմեք <strong>Authorize APIs</strong>:</li>
+                                <li>Մուտք գործեք ձեր Google հաշիվ, իսկ <strong>Step 2</strong>-ում սեղմեք <strong>Exchange authorization code for tokens</strong>։</li>
+                                <li>Պատճենեք ստացված <strong>Refresh Token</strong>-ը և տեղադրեք այստեղ։</li>
+                              </ol>
+                            </div>
+
+                            <button
+                              onClick={handleRefreshTokenConnect}
+                              disabled={spreadsheetLoading}
+                              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                            >
+                              {spreadsheetLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                              Միացնել Պաշտոնական API-ն
+                            </button>
+                          </div>
+
+                          {/* 🚀 Google Apps Script - Bypass Mode */}
+                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-150 rounded-2xl p-5 space-y-4">
+                            <p className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                              🚀 Տարբերակ 2. Միացում Apps Script-ով (Առանց Google Auth-ի)
+                            </p>
+                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                              Տեղադրեք մեր 20-տողանոց Google Apps Script-ը ձեր աղյուսակում և միացրեք URL-ը այստեղ (շատ հեշտ է և bypass է անում Google-ի բոլոր սահմանափակումները)։
+                            </p>
+                            
+                            <div className="bg-slate-900 rounded-xl p-3 text-left relative overflow-hidden group">
+                              <span className="absolute top-2 right-2 text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">Apps Script Կոդ</span>
+                              <pre className="text-[10px] text-emerald-400 font-mono overflow-x-auto max-h-40 leading-relaxed">
+{`function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var params = JSON.parse(e.postData.contents);
+    if (params.action === 'overwrite') {
+      sheet.clearContents();
+      for (var i = 0; i < params.values.length; i++) {
+        sheet.appendRow(params.values[i]);
+      }
+    } else if (params.action === 'append') {
+      sheet.appendRow(params.values);
+    } else if (params.action === 'update') {
+      var rowIndex = params.rowIndex;
+      if (rowIndex && rowIndex > 0) {
+        var rowValues = params.values;
+        var range = sheet.getRange(rowIndex, 1, 1, rowValues.length);
+        range.setValues([rowValues]);
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`}
+                              </pre>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                              <input
+                                type="text"
+                                placeholder="https://script.google.com/macros/s/.../exec"
+                                value={appsScriptInput}
+                                onChange={(e) => setAppsScriptInput(e.target.value)}
+                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-indigo-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <button
+                                onClick={handleAppsScriptConnect}
+                                disabled={spreadsheetLoading || !appsScriptInput.trim()}
+                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 shrink-0 cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                              >
+                                {spreadsheetLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Միացնել Script-ով'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 🔑 Simple Access Token - Quick Solution */}
+                          <div className="space-y-3 border-t border-slate-200/60 pt-5">
                             <p className="text-xs font-bold text-slate-800">
                               Անհատական Google Access Token (Արագ լուծում)
                             </p>
                             <p className="text-[11px] text-slate-500 leading-relaxed">
-                              Եթե Vercel-ում Google-ով մուտքը արգելափակվում է `unauthorized-domain` սխալով, կարող եք տեղադրել Google OAuth Access Token-ը այստեղ.
+                              Եթե ցանկանում եք ժամանակավոր փորձարկել, կարող եք ուղղակի մուտքագրել Google OAuth Access Token-ը այստեղ.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-2">
                               <input
@@ -1457,41 +1841,6 @@ export default function App() {
                                 Միացնել
                               </button>
                             </div>
-                          </div>
-
-                          <div className="border-t border-slate-200/60 pt-4 space-y-3">
-                            <p className="text-xs font-bold text-slate-800">
-                              Սեփական Google Client ID (Մշտական լուծում Vercel-ի համար)
-                            </p>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                              Տեղադրեք ձեր սեփական Google OAuth Client ID-ն, որպեսզի «Միացնել Google-ը» կոճակը միշտ անխափան աշխատի Vercel դոմեյնի վրա:
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <input
-                                type="text"
-                                placeholder="854020054293-e5sd8vcb...apps.googleusercontent.com"
-                                value={customClientId}
-                                onChange={(e) => setCustomClientId(e.target.value)}
-                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              />
-                              <button
-                                onClick={() => handleSaveCustomClientId(customClientId)}
-                                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold rounded-xl transition shrink-0 cursor-pointer"
-                              >
-                                Պահպանել ID-ն
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-4 space-y-2">
-                            <p className="text-[11px] font-bold text-amber-800">
-                              📋 Ինչպե՞ս կարգավորել Vercel-ի դոմեյնը Google-ում.
-                            </p>
-                            <ol className="list-decimal list-inside text-[10.5px] text-slate-650 leading-relaxed space-y-1">
-                              <li>Մտեք <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold underline">Firebase Console</a> &rarr; Authentication &rarr; Settings &rarr; Authorized domains և ավելացրեք ձեր Vercel դոմեյնը (<code>tab-crm.vercel.app</code>)։</li>
-                              <li>Մտեք <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold underline">Google Cloud Console</a> &rarr; APIs & Services &rarr; Credentials։</li>
-                              <li>Խմբագրեք ձեր OAuth 2.0 Web Client-ը և <strong>Authorized JavaScript origins</strong> բաժնում ավելացրեք <code>https://tab-crm.vercel.app</code>:</li>
-                            </ol>
                           </div>
                         </div>
                       )}
