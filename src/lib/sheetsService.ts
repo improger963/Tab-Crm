@@ -144,7 +144,8 @@ const HEADERS = [
   'Առաքիչ',
   'Կարգավիճակ',
   'Լայնություն',
-  'Երկայնություն'
+  'Երկայնություն',
+  'ID'
 ];
 
 function buildItemsSummary(items: OrderItem[]): string {
@@ -211,12 +212,13 @@ function buildOrderRow(order: Order): string[] {
     '', // driverName
     order.status || OrderStatus.PENDING,
     (order.latitude || 40.1792).toString(),
-    (order.longitude || 44.5152).toString()
+    (order.longitude || 44.5152).toString(),
+    order.id || ''
   ];
 }
 
 async function initializeHeaders(spreadsheetId: string, sheetName: string, accessToken: string): Promise<void> {
-  const range = `${sheetName}!A1:M1`;
+  const range = `${sheetName}!A1:N1`;
   const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
     method: 'PUT',
     headers: {
@@ -303,7 +305,7 @@ export async function readOrdersFromSheet(
     throw new Error('Spreadsheet ID is missing.');
   }
   try {
-    const range = `${sheetName}!A1:M1000`;
+    const range = `${sheetName}!A1:N1000`;
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -326,7 +328,7 @@ export async function readOrdersFromSheet(
       const row = rows[i];
       if (!row || row.length === 0 || (!row[0] && !row[1] && !row[2])) continue; // Skip truly empty rows
 
-      const orderId = `ORD-R${i + 1}`;
+      const orderId = (row[13] && row[13].trim()) ? row[13].trim() : `ORD-R${i + 1}`;
       const purchaseDate = row[0] || '';
       const customerName = row[1] || '';
       const address = row[2] || '';
@@ -421,7 +423,7 @@ export async function addOrderToSheet(
     throw new Error('Spreadsheet ID is missing.');
   }
   try {
-    const range = `${sheetName}!A:M`;
+    const range = `${sheetName}!A:N`;
     const values = [buildOrderRow(order)];
 
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`, {
@@ -461,7 +463,7 @@ export async function updateOrderInSheet(
     throw new Error('Spreadsheet ID is missing.');
   }
   try {
-    const range = `${sheetName}!A${rowIndex}:M${rowIndex}`;
+    const range = `${sheetName}!A${rowIndex}:N${rowIndex}`;
     const values = [buildOrderRow(order)];
 
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
@@ -500,14 +502,14 @@ export async function overwriteAllOrdersInSheet(
     throw new Error('Spreadsheet ID is missing.');
   }
   try {
-    // 1. Re-initialize headers at A1:M1
+    // 1. Re-initialize headers at A1:N1
     await initializeHeaders(spreadsheetId, sheetName, accessToken);
 
     // 2. Prepare the rows
     const values = orders.map(buildOrderRow);
 
-    // 3. Clear existing values under headers (A2:M1000)
-    const clearRange = `${sheetName}!A2:M1000`;
+    // 3. Clear existing values under headers (A2:N1000)
+    const clearRange = `${sheetName}!A2:N1000`;
     const clearRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(clearRange)}:clear`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -516,8 +518,8 @@ export async function overwriteAllOrdersInSheet(
 
     if (values.length === 0) return;
 
-    // 4. Put the new values at A2:M...
-    const writeRange = `${sheetName}!A2:M${1 + values.length}`;
+    // 4. Put the new values at A2:N...
+    const writeRange = `${sheetName}!A2:N${1 + values.length}`;
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(writeRange)}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
       headers: {

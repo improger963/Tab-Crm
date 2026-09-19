@@ -74,9 +74,7 @@ export const getStoredData = () => {
       orders = JSON.parse(storedOrders);
       // Migration: ensure all existing orders are updated to numeric IDs and items have code, artikul, and name
       orders = orders.map((o, index) => {
-        const cleanId = (o.id || '').replace(/^ORD-/, '');
-        const num = parseInt(cleanId, 10);
-        const assignedId = (!isNaN(num) && num >= 1000) ? String(num) : String(1000 + index);
+        const assignedId = (o.id && String(o.id).trim()) ? String(o.id).trim() : String(1000 + index);
         return {
           ...o,
           id: assignedId,

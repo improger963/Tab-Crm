@@ -194,7 +194,7 @@ export default function App() {
     const interval = setInterval(() => {
       readOrdersFromSheet(selectedSpreadsheetId, selectedSheetTitle, googleToken)
         .then(res => {
-          if (res && res.orders && res.orders.length > 0) {
+          if (res && Array.isArray(res.orders)) {
             setOrders(prevOrders => {
               if (JSON.stringify(prevOrders) !== JSON.stringify(res.orders)) {
                 localStorage.setItem('crm_orders', JSON.stringify(res.orders));
@@ -603,7 +603,7 @@ export default function App() {
 
     // Auto-sync addition to Google Sheets
     if (autoSync && googleToken && selectedSpreadsheetId) {
-      addOrderToSheet(selectedSpreadsheetId, selectedSheetTitle, orderWithHistory as Order, googleToken)
+      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
         .then(() => addToast('success', 'Սինխրոնացվեց Google Sheets-ի հետ'))
         .catch(err => {
           handleGoogleApiError(err, 'Google Sheets ավտոմատ սինխրոնացման սխալ');
@@ -646,23 +646,10 @@ export default function App() {
     setActiveView('view-order');
     addToast('save', 'Փոփոխությունները պահպանված են');
 
-    const updatedOrderFull = updatedOrders.find(o => o.id === orderId);
-
     // Auto-sync update to Google Sheets
-    if (autoSync && googleToken && selectedSpreadsheetId && updatedOrderFull) {
-      const rowMatch = orderId.match(/^ORD-R(\d+)$/);
-      const handleSyncErr = (err: any) => {
-        handleGoogleApiError(err, 'Ավտոմատ սինխրոնացման թարմացման սխալ');
-      };
-
-      if (rowMatch) {
-         const rowIndex = parseInt(rowMatch[1], 10);
-         updateOrderInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrderFull, rowIndex, googleToken)
-           .catch(handleSyncErr);
-      } else {
-         addOrderToSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrderFull, googleToken)
-           .catch(handleSyncErr);
-      }
+    if (autoSync && googleToken && selectedSpreadsheetId) {
+      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
+        .catch(err => handleGoogleApiError(err, 'Ավտոմատ սինխրոնացման թարմացման սխալ'));
     }
   };
 
@@ -703,9 +690,7 @@ export default function App() {
       events: newEvents
     });
     setOrders(updatedOrders);
-    
-    const updatedOrderFull = updatedOrders.find(o => o.id === orderId);
-    
+
     // Trigger in-app notifications
     if (newStatus === OrderStatus.DELIVERED) {
       if (isAlertEnabled) {
@@ -736,20 +721,9 @@ export default function App() {
     }
 
     // Auto-sync status to Google Sheets
-    if (autoSync && googleToken && selectedSpreadsheetId && updatedOrderFull) {
-      const rowMatch = orderId.match(/^ORD-R(\d+)$/);
-      const handleSyncErr = (err: any) => {
-        handleGoogleApiError(err, 'Ավտոմատ կարգավիճակի սինխրոնացման սխալ');
-      };
-
-      if (rowMatch) {
-         const rowIndex = parseInt(rowMatch[1], 10);
-         updateOrderInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrderFull, rowIndex, googleToken)
-           .catch(handleSyncErr);
-      } else {
-         addOrderToSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrderFull, googleToken)
-           .catch(handleSyncErr);
-      }
+    if (autoSync && googleToken && selectedSpreadsheetId) {
+      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
+        .catch(err => handleGoogleApiError(err, 'Ավտոմատ կարգավիճակի սինխրոնացման սխալ'));
     }
   };
 
