@@ -105,7 +105,7 @@ export default function App() {
   const [autoSync, setAutoSync] = useState<boolean>(true);
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false);
   const [manualTokenInput, setManualTokenInput] = useState<string>('');
-  const [showManualTokenForm, setShowManualTokenForm] = useState<boolean>(false);
+  const [showManualTokenForm, setShowManualTokenForm] = useState<boolean>(true);
   const [customClientId, setCustomClientId] = useState<string>(() => {
     return localStorage.getItem('custom_google_client_id') || '';
   });
@@ -1257,8 +1257,28 @@ export default function App() {
                   initial={{ opacity: 0, y: 10 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   exit={{ opacity: 0, y: -10 }} 
-                  className="flex-1 min-h-0"
+                  className="flex-1 min-h-0 space-y-4"
                 >
+                  {(!googleUser || !googleToken) && (
+                    <div 
+                      onClick={() => {
+                        setActiveView('google-sheets');
+                        setShowManualTokenForm(true);
+                      }}
+                      className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-100/60 transition group shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Cloud className="w-4 h-4 text-amber-600 shrink-0 animate-bounce" />
+                        <span className="text-xs font-bold text-amber-800 leading-normal">
+                          📢 Google Sheets-ը միացված չէ։ Սեղմեք այստեղ՝ անհատական Access Token-ով արագ միացնելու կամ սեփական Google Client ID-ն կարգավորելու համար։
+                        </span>
+                      </div>
+                      <div className="text-[10.5px] font-extrabold text-amber-700 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-3xs group-hover:bg-amber-50 transition shrink-0">
+                        Միացնել
+                      </div>
+                    </div>
+                  )}
+
                   <OrderFeed 
                     orders={filteredOrders}
                     selectedOrderId={currentOrderId || undefined}
