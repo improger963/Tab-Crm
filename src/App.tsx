@@ -279,7 +279,29 @@ export default function App() {
         setGoogleUser(user);
         setGoogleToken(token);
         if (token) {
-          fetchSpreadsheets(token);
+          // Silently try to load spreadsheets and orders on boot
+          listSpreadsheets(token)
+            .then(list => {
+              setSpreadsheets(list);
+              let storedId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
+              let storedTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
+              if (storedId) {
+                readOrdersFromSheet(storedId, storedTitle, token)
+                  .then(res => {
+                    if (res && res.orders) {
+                      setOrders(res.orders);
+                      localStorage.setItem('crm_orders', JSON.stringify(res.orders));
+                    }
+                  })
+                  .catch(err => console.warn('Silent read error on mount:', err));
+              }
+            })
+            .catch(err => {
+              console.warn('Silent initial fetch failed, token probably expired:', err);
+              // Silently clear token to avoid showing popups on boot
+              setGoogleToken('');
+              clearCachedToken();
+            });
         }
       },
       () => {
@@ -306,12 +328,12 @@ export default function App() {
                   localStorage.setItem('crm_orders', JSON.stringify(res.orders));
                 }
               })
-              .catch(err => console.warn('Auto initial read error under refresh token mode:', err));
+              .catch(err => console.warn('Silent initial read error under refresh token mode:', err));
           }
         })
         .catch(err => {
-          console.error('Initial refresh token exchange failed on boot:', err);
-          addToast('delete', 'Չհաջողվեց թարմացնել Google API Token-ը։ Ստուգեք Client ID, Client Secret և Refresh Token-ը։');
+          console.warn('Silent initial refresh token exchange failed on boot:', err);
+          // Keep it silent on boot to avoid throwing loud errors on mount
         });
     }
   }, []);
