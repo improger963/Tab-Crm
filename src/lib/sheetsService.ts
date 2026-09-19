@@ -153,11 +153,12 @@ function buildItemsSummary(items: OrderItem[]): string {
   return items.map(item => {
     const code = item.code || '';
     const artikul = item.artikul ? ` (${item.artikul})` : '';
+    const priceStr = item.price ? ` [${item.price} ֏]` : '';
     const qty = item.quantity && item.quantity > 1 ? ` x${item.quantity}` : '';
     if (!code && item.artikul) {
-      return `${item.artikul}${qty}`;
+      return `${item.artikul}${priceStr}${qty}`;
     }
-    return `${code}${artikul}${qty}`;
+    return `${code}${artikul}${priceStr}${qty}`;
   }).filter(Boolean).join(', ');
 }
 
@@ -167,12 +168,23 @@ function parseItemsString(itemsStr: string): OrderItem[] {
   return parts.map((part, idx) => {
     let quantity = 1;
     let cleanPart = part;
-    const qtyMatch = part.match(/\s+x(\d+)$/i);
+    
+    // Parse quantity: "x5" or "x 5" at the end
+    const qtyMatch = cleanPart.match(/\s+x\s*(\d+)$/i);
     if (qtyMatch) {
       quantity = parseInt(qtyMatch[1], 10) || 1;
-      cleanPart = part.replace(/\s+x(\d+)$/i, '').trim();
+      cleanPart = cleanPart.replace(/\s+x\s*(\d+)$/i, '').trim();
     }
 
+    // Parse price: "[15000 ֏]" or "[15000]"
+    let price = 0;
+    const priceMatch = cleanPart.match(/\[\s*(\d+(?:\.\d+)?)(?:\s*֏)?\s*\]/);
+    if (priceMatch) {
+      price = parseFloat(priceMatch[1]) || 0;
+      cleanPart = cleanPart.replace(/\[\s*(\d+(?:\.\d+)?)(?:\s*֏)?\s*\]/, '').trim();
+    }
+
+    // Parse artikul: "code (artikul)"
     const match = cleanPart.match(/^([^\(]+)(?:\(([^\)]+)\))?/);
     let code = cleanPart;
     let artikul = '';
@@ -186,7 +198,7 @@ function parseItemsString(itemsStr: string): OrderItem[] {
       code: code || '',
       artikul: artikul || '',
       quantity: quantity,
-      price: 0,
+      price: price,
       discount: 0
     };
   });

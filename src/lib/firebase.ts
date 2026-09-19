@@ -27,7 +27,8 @@ const requestGisToken = (): Promise<{ user: User; accessToken: string }> => {
       return;
     }
 
-    const clientId = (firebaseConfig as any).oAuthClientId || '854020054293-e5sd8vcb6ptagflaocebs0m447f0i2eo.apps.googleusercontent.com';
+    const customClientId = localStorage.getItem('custom_google_client_id') || (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    const clientId = customClientId || (firebaseConfig as any).oAuthClientId || '854020054293-e5sd8vcb6ptagflaocebs0m447f0i2eo.apps.googleusercontent.com';
 
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
@@ -114,6 +115,14 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   if (isSigningIn) return null;
   isSigningIn = true;
   try {
+    // If Google Identity Services SDK is available, use it directly as primary provider.
+    // This executes synchronously inside the user gesture, avoiding browser popup-blocking
+    // and Firebase's "auth/unauthorized-domain" restrictions on custom domains like Vercel.
+    if (window.google?.accounts?.oauth2) {
+      return await requestGisToken();
+    }
+
+    // Fallback to Firebase signInWithPopup if GIS script isn't loaded yet
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (!credential?.accessToken) {
@@ -124,11 +133,6 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     sessionStorage.setItem('delivery_tracker_google_access_token', cachedAccessToken);
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
-    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('unauthorized-domain') || error?.code === 'auth/configuration-not-found') {
-      console.warn('Firebase unauthorized domain error encountered. Switching to Google Identity Services popup...');
-      return await requestGisToken();
-    }
-
     if (error?.code === 'auth/popup-closed-by-user' || error?.message?.includes('popup-closed-by-user')) {
       console.log('User closed Google sign in popup window');
     } else if (error?.code === 'auth/popup-blocked' || error?.message?.includes('popup-blocked')) {
@@ -140,6 +144,34 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   } finally {
     isSigningIn = false;
   }
+};
+
+export const connectWithDirectToken = async (token: string): Promise<{ user: User; accessToken: string }> => {
+  const cleanToken = token.trim();
+  if (!cleanToken) {
+    throw new Error('Access token-ը դատարկ է։');
+  }
+
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${cleanToken}` }
+  });
+
+  if (!res.ok) {
+    throw new Error('Անվավեր Access Token: Google API-ն մերժեց հարցումը։');
+  }
+
+  const profile = await res.json();
+  cachedAccessToken = cleanToken;
+  sessionStorage.setItem('delivery_tracker_google_access_token', cleanToken);
+
+  const userObj = {
+    uid: profile.sub || 'google-user',
+    displayName: profile.name || 'Google User',
+    email: profile.email || 'user@google.com',
+    photoURL: profile.picture || ''
+  };
+
+  return { user: userObj as unknown as User, accessToken: cleanToken };
 };
 
 export const getAccessToken = async (): Promise<string | null> => {

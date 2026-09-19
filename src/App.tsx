@@ -28,7 +28,8 @@ import {
   Menu,
   Trash2,
   Settings,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -46,7 +47,7 @@ import { posAudio } from './lib/posAudio';
 // Types & Libs
 import { Order, OrderStatus, PaymentStatus, SaleType } from './types';
 import { getStoredData, saveOrder, updateOrder, deleteOrder, clearAllOrders } from './lib/storage';
-import { initAuth, googleSignIn, logout, clearCachedToken } from './lib/firebase';
+import { initAuth, googleSignIn, logout, clearCachedToken, connectWithDirectToken } from './lib/firebase';
 import { 
   listSpreadsheets, 
   createSpreadsheet, 
@@ -103,6 +104,11 @@ export default function App() {
   });
   const [autoSync, setAutoSync] = useState<boolean>(true);
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false);
+  const [manualTokenInput, setManualTokenInput] = useState<string>('');
+  const [showManualTokenForm, setShowManualTokenForm] = useState<boolean>(false);
+  const [customClientId, setCustomClientId] = useState<string>(() => {
+    return localStorage.getItem('custom_google_client_id') || '';
+  });
 
   // Unified handler for Google Sheets API errors
   const handleGoogleApiError = (err: any, customPrefix: string) => {
@@ -455,6 +461,41 @@ export default function App() {
     } finally {
       setSpreadsheetLoading(false);
     }
+  };
+
+  const handleDirectTokenConnect = async () => {
+    if (!manualTokenInput.trim()) {
+      addToast('warning', 'Խնդրում ենք մուտքագրել Access Token-ը։');
+      return;
+    }
+    setSpreadsheetLoading(true);
+    try {
+      const res = await connectWithDirectToken(manualTokenInput.trim());
+      if (res) {
+        setGoogleUser(res.user);
+        setGoogleToken(res.accessToken);
+        addToast('success', 'Google Access Token-ով հաջողությամբ միացվեց');
+        await fetchSpreadsheets(res.accessToken);
+        setShowManualTokenForm(false);
+        setManualTokenInput('');
+      }
+    } catch (err: any) {
+      addToast('delete', `Token-ի սխալ՝ ${err.message || err}`);
+    } finally {
+      setSpreadsheetLoading(false);
+    }
+  };
+
+  const handleSaveCustomClientId = (clientIdVal: string) => {
+    const val = clientIdVal.trim();
+    if (val) {
+      localStorage.setItem('custom_google_client_id', val);
+      addToast('success', 'Custom Google Client ID-ն հաջողությամբ պահպանվեց։');
+    } else {
+      localStorage.removeItem('custom_google_client_id');
+      addToast('success', 'Custom Google Client ID-ն ջնջվեց (լռելյայն ID-ն վերականգնված է)։');
+    }
+    setCustomClientId(val);
   };
 
   const handleGoogleDisconnect = async () => {
@@ -1356,25 +1397,98 @@ export default function App() {
                         <Lock className="w-8 h-8" />
                       </div>
                       <h4 className="text-base font-black text-slate-800 uppercase tracking-wider mb-2">Միացեք Google-ին</h4>
-                      <p className="text-xs text-slate-500 font-medium max-w-md leading-relaxed mb-8">
+                      <p className="text-xs text-slate-500 font-medium max-w-md leading-relaxed mb-6">
                         Միացեք, որպեսզի պատվերները ավտոմատ պահպանվեն և թարմացվեն Google աղյուսակներում:
                       </p>
 
-                      <button
-                        onClick={handleGoogleConnect}
-                        disabled={spreadsheetLoading}
-                        className="px-6 py-3.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-50"
-                      >
-                        {spreadsheetLoading ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" /> Միանում է...
-                          </>
-                        ) : (
-                          <>
-                            <Globe className="w-4 h-4" /> Միացնել հաշիվը
-                          </>
-                        )}
-                      </button>
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
+                        <button
+                          onClick={handleGoogleConnect}
+                          disabled={spreadsheetLoading}
+                          className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-50"
+                        >
+                          {spreadsheetLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" /> Միանում է...
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="w-4 h-4" /> Միացնել Google-ը
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => setShowManualTokenForm(!showManualTokenForm)}
+                          className="w-full sm:w-auto px-4 py-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold rounded-xl transition duration-200 flex items-center justify-center gap-1.5"
+                        >
+                          <Key className="w-4 h-4 text-slate-500" /> {showManualTokenForm ? 'Թաքցնել' : 'Անհատական Access Token'}
+                        </button>
+                      </div>
+
+                      {showManualTokenForm && (
+                        <div className="w-full mt-6 p-5 bg-slate-50 rounded-2xl border border-slate-200/80 text-left space-y-5">
+                          <div className="space-y-3">
+                            <p className="text-xs font-bold text-slate-800">
+                              Անհատական Google Access Token (Արագ լուծում)
+                            </p>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">
+                              Եթե Vercel-ում Google-ով մուտքը արգելափակվում է `unauthorized-domain` սխալով, կարող եք տեղադրել Google OAuth Access Token-ը այստեղ.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="password"
+                                placeholder="ya29.a0..."
+                                value={manualTokenInput}
+                                onChange={(e) => setManualTokenInput(e.target.value)}
+                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <button
+                                onClick={handleDirectTokenConnect}
+                                disabled={spreadsheetLoading || !manualTokenInput.trim()}
+                                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 shrink-0 cursor-pointer"
+                              >
+                                Միացնել
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-200/60 pt-4 space-y-3">
+                            <p className="text-xs font-bold text-slate-800">
+                              Սեփական Google Client ID (Մշտական լուծում Vercel-ի համար)
+                            </p>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">
+                              Տեղադրեք ձեր սեփական Google OAuth Client ID-ն, որպեսզի «Միացնել Google-ը» կոճակը միշտ անխափան աշխատի Vercel դոմեյնի վրա:
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="text"
+                                placeholder="854020054293-e5sd8vcb...apps.googleusercontent.com"
+                                value={customClientId}
+                                onChange={(e) => setCustomClientId(e.target.value)}
+                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <button
+                                onClick={() => handleSaveCustomClientId(customClientId)}
+                                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold rounded-xl transition shrink-0 cursor-pointer"
+                              >
+                                Պահպանել ID-ն
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-4 space-y-2">
+                            <p className="text-[11px] font-bold text-amber-800">
+                              📋 Ինչպե՞ս կարգավորել Vercel-ի դոմեյնը Google-ում.
+                            </p>
+                            <ol className="list-decimal list-inside text-[10.5px] text-slate-650 leading-relaxed space-y-1">
+                              <li>Մտեք <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold underline">Firebase Console</a> &rarr; Authentication &rarr; Settings &rarr; Authorized domains և ավելացրեք ձեր Vercel դոմեյնը (<code>tab-crm.vercel.app</code>)։</li>
+                              <li>Մտեք <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-indigo-600 font-bold underline">Google Cloud Console</a> &rarr; APIs & Services &rarr; Credentials։</li>
+                              <li>Խմբագրեք ձեր OAuth 2.0 Web Client-ը և <strong>Authorized JavaScript origins</strong> բաժնում ավելացրեք <code>https://tab-crm.vercel.app</code>:</li>
+                            </ol>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-8 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
                         <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />

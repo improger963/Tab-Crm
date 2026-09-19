@@ -20,6 +20,50 @@ interface OrderFeedProps {
   onClearAllOrders?: () => void;
 }
 
+// Helper for robust date parsing in various formats
+export const parseDateSafe = (dateStr: any): Date | null => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const s = String(dateStr).trim();
+  if (!s) return null;
+
+  // 1. Try standard JS parsing
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  // 2. Try DD.MM.YYYY HH:MM:SS or DD.MM.YYYY
+  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1; // Month is 0-indexed in JS Date
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  // 3. Try DD/MM/YYYY
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10) - 1;
+    const year = parseInt(slashMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  return null;
+};
+
 export default function OrderFeed({
   orders,
   selectedOrderId,
@@ -172,17 +216,19 @@ export default function OrderFeed({
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     return orders.filter(order => {
-      const orderDate = order.purchaseDate;
-      if (!orderDate) return false;
+      const parsedDate = parseDateSafe(order.purchaseDate);
+      if (!parsedDate) return false;
+
+      const dateStrYMD = parsedDate.toISOString().split('T')[0];
 
       if (dateFilter === 'today') {
-        return orderDate === todayStr || orderDate.startsWith(todayStr);
+        return dateStrYMD === todayStr;
       }
       if (dateFilter === 'yesterday') {
-        return orderDate === yesterdayStr || orderDate.startsWith(yesterdayStr);
+        return dateStrYMD === yesterdayStr;
       }
       if (dateFilter === 'week') {
-        return new Date(orderDate).getTime() >= weekAgo.getTime();
+        return parsedDate.getTime() >= weekAgo.getTime();
       }
       return true;
     });
@@ -193,8 +239,16 @@ export default function OrderFeed({
     return [...filteredByDateOrders].sort((a, b) => {
       if (sortBy === 'amount-desc') return (b.totalAmount || 0) - (a.totalAmount || 0);
       if (sortBy === 'amount-asc') return (a.totalAmount || 0) - (b.totalAmount || 0);
-      if (sortBy === 'date-asc') return new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime();
-      if (sortBy === 'date-desc') return new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime();
+      if (sortBy === 'date-asc') {
+        const dA = parseDateSafe(a.purchaseDate);
+        const dB = parseDateSafe(b.purchaseDate);
+        return (dA?.getTime() || 0) - (dB?.getTime() || 0);
+      }
+      if (sortBy === 'date-desc') {
+        const dA = parseDateSafe(a.purchaseDate);
+        const dB = parseDateSafe(b.purchaseDate);
+        return (dB?.getTime() || 0) - (dA?.getTime() || 0);
+      }
       if (sortBy === 'id-asc') {
         const numA = parseInt((a.id || '').replace(/\D/g, ''), 10) || 0;
         const numB = parseInt((b.id || '').replace(/\D/g, ''), 10) || 0;
@@ -464,13 +518,14 @@ export default function OrderFeed({
                           const statusInfo = getStatusBadge(order.status);
                           
                           // Format creation date
-                          const rawDate = order.purchaseDate || order.createdAt;
-                          const formattedDateTime = rawDate ? new Date(rawDate).toLocaleString('hy-AM', {
+                          const rawDate = order.purchaseDate;
+                          const parsedDateObj = parseDateSafe(rawDate);
+                          const formattedDateTime = parsedDateObj ? parsedDateObj.toLocaleString('hy-AM', {
                             day: 'numeric',
                             month: 'short',
                             hour: '2-digit',
                             minute: '2-digit'
-                          }) : '---';
+                          }) : (rawDate || '---');
 
                           return (
                             <tr

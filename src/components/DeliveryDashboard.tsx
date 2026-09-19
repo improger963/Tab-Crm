@@ -47,6 +47,47 @@ const PAYMENT_COLORS = {
   [PaymentMethod.TRANSFER]: '#06b6d4', // cyan
 };
 
+// Helper for robust date parsing in various formats
+const parseDateSafe = (dateStr: any): Date | null => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const s = String(dateStr).trim();
+  if (!s) return null;
+
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10) - 1;
+    const year = parseInt(slashMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  return null;
+};
+
 export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDashboardProps) {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
   const [copiedSku, setCopiedSku] = useState<string | null>(null);
@@ -71,17 +112,19 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     return orders.filter(order => {
-      const orderDate = order.purchaseDate;
-      if (!orderDate) return false;
+      const parsedDate = parseDateSafe(order.purchaseDate);
+      if (!parsedDate) return false;
+
+      const dateStrYMD = parsedDate.toISOString().split('T')[0];
 
       if (timeFilter === 'today') {
-        return orderDate === todayStr || orderDate.startsWith(todayStr);
+        return dateStrYMD === todayStr;
       }
       if (timeFilter === 'yesterday') {
-        return orderDate === yesterdayStr || orderDate.startsWith(yesterdayStr);
+        return dateStrYMD === yesterdayStr;
       }
       if (timeFilter === 'week') {
-        return new Date(orderDate).getTime() >= weekAgo.getTime();
+        return parsedDate.getTime() >= weekAgo.getTime();
       }
       return true;
     });
@@ -105,11 +148,13 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
     }
 
     return last7Days.map(day => {
-      const dayOrders = orders.filter(o => 
-        o.purchaseDate === day.isoDate || 
-        o.purchaseDate === day.localDate ||
-        (o.purchaseDate && o.purchaseDate.startsWith(day.isoDate))
-      );
+      const dayOrders = orders.filter(o => {
+        const parsedDate = parseDateSafe(o.purchaseDate);
+        if (!parsedDate) return false;
+        const dateStrYMD = parsedDate.toISOString().split('T')[0];
+        const dateStrLocal = parsedDate.toLocaleDateString();
+        return dateStrYMD === day.isoDate || dateStrLocal === day.localDate;
+      });
 
       return {
         name: day.label,

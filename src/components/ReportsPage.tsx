@@ -31,6 +31,47 @@ interface ReportsPageProps {
 
 type ReportType = 'delivery' | 'pickup' | 'supplier';
 
+// Helper for robust date parsing in various formats
+const parseDateSafe = (dateStr: any): Date | null => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const s = String(dateStr).trim();
+  if (!s) return null;
+
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10) - 1;
+    const year = parseInt(slashMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  return null;
+};
+
 export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps) {
   // Current Active Report Tab
   const [activeTab, setActiveTab] = useState<ReportType>('delivery');
@@ -55,18 +96,19 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
   // Filtered Orders based on Date and Status
   const dateFilteredOrders = useMemo(() => {
     return orders.filter(order => {
+      const parsedDate = parseDateSafe(order.purchaseDate);
+      if (!parsedDate) return false;
+
+      const orderDateStr = parsedDate.toISOString().split('T')[0];
+
       // Date Filter
       if (dateMode === 'today') {
-        const orderDate = order.purchaseDate ? order.purchaseDate.split('T')[0] : '';
-        if (orderDate !== todayStr && !order.purchaseDate?.includes(todayStr)) {
-          const formattedToday = new Date().toLocaleDateString('hy-AM');
-          if (!order.purchaseDate?.includes(formattedToday)) return false;
+        if (orderDateStr !== todayStr) {
+          return false;
         }
       } else if (dateMode === 'custom' && selectedDate) {
-        const orderDate = order.purchaseDate ? order.purchaseDate.split('T')[0] : '';
-        if (orderDate !== selectedDate) {
-          const formattedSelected = new Date(selectedDate).toLocaleDateString('hy-AM');
-          if (!order.purchaseDate?.includes(selectedDate) && !order.purchaseDate?.includes(formattedSelected)) return false;
+        if (orderDateStr !== selectedDate) {
+          return false;
         }
       }
 
