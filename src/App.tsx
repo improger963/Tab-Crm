@@ -852,10 +852,10 @@ export default function App() {
             </div>
 
             {/* Center: Top Navigation Panel Tabs */}
-            <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/90 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shrink min-w-0 overflow-x-auto no-scrollbar">
+            <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/90 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shrink-0 flex-nowrap overflow-x-auto no-scrollbar">
               <button
                 onClick={() => setActiveView('orders')}
-                className={`nav-link text-xs px-2 sm:px-3 py-1 sm:py-1.5 ${
+                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${
                   activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order'
                     ? 'nav-link-active'
                     : 'nav-link-inactive'
@@ -876,7 +876,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveView('dashboard')}
-                className={`nav-link text-xs px-2 sm:px-3 py-1 sm:py-1.5 ${activeView === 'dashboard' ? 'nav-link-active' : 'nav-link-inactive'}`}
+                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'dashboard' ? 'nav-link-active' : 'nav-link-inactive'}`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
                 <span className="hidden md:inline">Վիճակագրություն</span>
@@ -885,7 +885,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveView('google-sheets')}
-                className={`nav-link text-xs px-2 sm:px-3 py-1 sm:py-1.5 ${activeView === 'google-sheets' ? 'nav-link-active' : 'nav-link-inactive'}`}
+                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'google-sheets' ? 'nav-link-active' : 'nav-link-inactive'}`}
               >
                 <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
                 <span className="hidden md:inline">Google Sheets</span>
@@ -899,7 +899,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveView('reports')}
-                className={`nav-link text-xs px-2 sm:px-3 py-1 sm:py-1.5 ${activeView === 'reports' ? 'nav-link-active' : 'nav-link-inactive'}`}
+                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'reports' ? 'nav-link-active' : 'nav-link-inactive'}`}
               >
                 <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
                 <span className="hidden md:inline">PDF Հաշվետվություններ</span>
@@ -963,20 +963,6 @@ export default function App() {
                 <ScanLine className="w-3.5 h-3.5 text-indigo-600" />
                 <span className="hidden 2xl:inline">Սկաներ</span>
                 <span className="hidden xl:inline text-[9.5px] font-mono opacity-50 bg-slate-200/80 px-1 rounded">S</span>
-              </button>
-
-              {/* Daily Orders & Items PDF Report Page Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  posAudio.playScanBeep();
-                  setActiveView('reports');
-                }}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-500/30 rounded-xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm shadow-emerald-200 shrink-0"
-                title="Փաստաթղթերի և PDF Արտահանման Էջ"
-              >
-                <FileText className="w-3.5 h-3.5 text-emerald-100" />
-                <span className="inline">PDF Հաշվետվություններ</span>
               </button>
 
               {/* Sound Mute/Unmute Toggle */}
