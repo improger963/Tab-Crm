@@ -14,7 +14,8 @@ import {
   calculateItemLineSubtotal, 
   calculateItemDiscount, 
   calculateItemLineTotal,
-  getTodayLocalYMD
+  getTodayLocalYMD,
+  findProductByCode
 } from '../lib/storage';
 import { posAudio } from '../lib/posAudio';
 
@@ -46,6 +47,11 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
     cashReceived: order.cashReceived || 0
   });
 
+  // Additional Phone Numbers state
+  const [additionalPhoneNumbers, setAdditionalPhoneNumbers] = useState<string[]>(
+    order.additionalPhoneNumbers || []
+  );
+
   const [items, setItems] = useState<OrderItem[]>(
     (order.items && order.items.length > 0)
       ? order.items.map(item => ({ ...item }))
@@ -73,6 +79,23 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
     if (limited.length > 6) formatted += `-${limited.slice(6, 8)}`;
     
     return formatted;
+  };
+
+  const handleAddAdditionalPhone = () => {
+    setAdditionalPhoneNumbers(prev => [...prev, '']);
+  };
+
+  const handleAdditionalPhoneChange = (index: number, val: string) => {
+    const formatted = formatPhoneNumber(val);
+    setAdditionalPhoneNumbers(prev => {
+      const next = [...prev];
+      next[index] = formatted;
+      return next;
+    });
+  };
+
+  const handleRemoveAdditionalPhone = (index: number) => {
+    setAdditionalPhoneNumbers(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -117,7 +140,20 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
   const handleItemChange = (id: string, field: keyof OrderItem, value: string | number) => {
     setItems(prev => prev.map(item => {
       if (item.id === id) {
-        return { ...item, [field]: value };
+        const updated = { ...item, [field]: value };
+
+        // Auto-fill from saved catalog memory if matching code or artikul is typed
+        if ((field === 'code' || field === 'artikul') && typeof value === 'string' && value.trim().length >= 1) {
+          const matched = findProductByCode(value.trim());
+          if (matched) {
+            updated.name = matched.name || updated.name;
+            updated.price = matched.price !== undefined ? matched.price : updated.price;
+            if (field === 'code' && matched.artikul) updated.artikul = matched.artikul;
+            if (field === 'artikul' && matched.code) updated.code = matched.code;
+          }
+        }
+
+        return updated;
       }
       return item;
     }));
@@ -239,9 +275,12 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
     const isStoreSale = formData.saleType === SaleType.ON_SITE;
     const customerDisplayName = formData.customerName.trim() || (isStoreSale ? 'Տեղում հաճախորդ' : 'Անանուն');
 
+    const validAdditionalPhones = additionalPhoneNumbers.filter(p => p.trim() !== '');
+
     const updates: Partial<Order> = {
       customerName: customerDisplayName,
       phoneNumber: formData.phoneNumber,
+      additionalPhoneNumbers: validAdditionalPhones,
       purchaseDate: formData.purchaseDate,
       deliveryDate: formData.deliveryDate,
       address: formData.address.trim() || (isStoreSale ? 'Խանութ-Սրահ (Տեղում)' : formData.pickupBranch),
@@ -444,6 +483,41 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                 {errors.phoneNumber && (
                   <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.phoneNumber}</p>
                 )}
+
+                {/* Additional Phone Numbers */}
+                <div className="mt-2.5 space-y-2">
+                  {additionalPhoneNumbers.map((phone, pIdx) => (
+                    <div key={pIdx} className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <Phone className="w-3.5 h-3.5 text-indigo-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) => handleAdditionalPhoneChange(pIdx, e.target.value)}
+                          placeholder={`Հավելյալ #${pIdx + 1}`}
+                          className="input-field pl-8 font-mono font-bold text-xs py-1.5"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdditionalPhone(pIdx)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
+                        title="Հեռացնել"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={handleAddAdditionalPhone}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer border border-dashed border-indigo-200 mt-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>+ Ավելացնել հավելյալ հեռ.</span>
+                  </button>
+                </div>
               </div>
 
               <div>

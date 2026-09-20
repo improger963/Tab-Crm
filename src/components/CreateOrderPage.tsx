@@ -16,7 +16,10 @@ import {
   calculateItemDiscount, 
   calculateItemLineTotal,
   generateNextNumericOrderId,
-  getTodayLocalYMD
+  getTodayLocalYMD,
+  getSavedProducts,
+  findProductByCode,
+  saveProductsToCatalog
 } from '../lib/storage';
 import { posAudio } from '../lib/posAudio';
 
@@ -24,18 +27,6 @@ interface CreateOrderPageProps {
   onSave: (order: Order, printSlip: boolean) => void;
   onCancel: () => void;
 }
-
-// Quick presets for frequent shop products to accelerate cashier workflow
-const CATALOG_ITEMS = [
-  { code: '4203', artikul: 'ART-4203', price: 15000, category: 'Կոշիկ' },
-  { code: '1118', artikul: 'ART-1118', price: 2500, category: 'Աքսեսուար' },
-  { code: '8832', artikul: 'ART-8832', price: 25000, category: 'Պայուսակ' },
-  { code: '5510', artikul: 'ART-5510', price: 8000, category: 'Աքսեսուար' },
-  { code: '3320', artikul: 'ART-3320', price: 5000, category: 'Գլխարկ' },
-  { code: '7741', artikul: 'ART-7741', price: 12000, category: 'Աքսեսուար' },
-  { code: '6625', artikul: 'ART-6625', price: 18000, category: 'Հագուստ' },
-  { code: '9914', artikul: 'ART-9914', price: 7000, category: 'Աքսեսուար' },
-];
 
 export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPageProps) {
   const [formData, setFormData] = useState({
@@ -57,12 +48,17 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
     cashReceived: 0
   });
 
-  const [items, setItems] = useState<OrderItem[]>([
-    { id: Math.random().toString(36).substr(2, 9), code: '4203', artikul: 'ART-4203', name: 'Կոշիկ Տղամարդու Դասական', quantity: 1, price: 15000 }
-  ]);
+  // Additional phone numbers list
+  const [additionalPhoneNumbers, setAdditionalPhoneNumbers] = useState<string[]>([]);
+
+  // No default item pre-added! Start with an empty array.
+  const [items, setItems] = useState<OrderItem[]>([]);
 
   const [catalogSearch, setCatalogSearch] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Get saved products from catalog memory (database)
+  const savedProducts = useMemo(() => getSavedProducts(), [items]);
 
   // Armenian Phone Formatter: +374 (XX) XX-XX-XX
   const formatPhoneNumber = (value: string) => {
@@ -85,6 +81,23 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
     return formatted;
   };
 
+  const handleAddAdditionalPhone = () => {
+    setAdditionalPhoneNumbers(prev => [...prev, '']);
+  };
+
+  const handleAdditionalPhoneChange = (index: number, val: string) => {
+    const formatted = formatPhoneNumber(val);
+    setAdditionalPhoneNumbers(prev => {
+      const next = [...prev];
+      next[index] = formatted;
+      return next;
+    });
+  };
+
+  const handleRemoveAdditionalPhone = (index: number) => {
+    setAdditionalPhoneNumbers(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -103,7 +116,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
     }
   };
 
-  const handleAddItem = (preset?: { code: string; artikul?: string; price: number }) => {
+  const handleAddItem = (preset?: { code: string; artikul?: string; name?: string; price: number }) => {
     posAudio.playScanBeep();
     setItems(prev => [
       ...prev,
@@ -111,6 +124,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
         id: Math.random().toString(36).substr(2, 9),
         code: preset ? preset.code : '',
         artikul: preset ? (preset.artikul || `ART-${preset.code}`) : '',
+        name: preset ? (preset.name || '') : '',
         quantity: 1,
         price: preset ? preset.price : 0
       }
@@ -118,19 +132,31 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
   };
 
   const handleRemoveItem = (id: string) => {
-    if (items.length > 1) {
-      posAudio.playScanBeep();
-      setItems(prev => prev.filter(item => item.id !== id));
-    }
+    posAudio.playScanBeep();
+    setItems(prev => prev.filter(item => item.id !== id));
   };
 
   const handleItemChange = (id: string, field: keyof OrderItem, value: string | number) => {
     setItems(prev => prev.map(item => {
       if (item.id === id) {
-        return { ...item, [field]: value };
+        const updated = { ...item, [field]: value };
+
+        // Auto-match saved product when code or artikul is typed
+        if ((field === 'code' || field === 'artikul') && typeof value === 'string' && value.trim().length >= 1) {
+          const matchedProduct = findProductByCode(value.trim());
+          if (matchedProduct) {
+            updated.name = matchedProduct.name || updated.name;
+            updated.price = matchedProduct.price !== undefined ? matchedProduct.price : updated.price;
+            if (field === 'code' && matchedProduct.artikul) updated.artikul = matchedProduct.artikul;
+            if (field === 'artikul' && matchedProduct.code) updated.code = matchedProduct.code;
+          }
+        }
+
+        return updated;
       }
       return item;
     }));
+
     if (errors.items) {
       setErrors(prev => {
         const next = { ...prev };
@@ -198,16 +224,16 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
     return Math.max(0, formData.cashReceived - payableNowAmount);
   }, [formData.paymentMethod, formData.cashReceived, payableNowAmount]);
 
-  // Filter catalog items
+  // Filter saved catalog items from database memory
   const filteredCatalog = useMemo(() => {
-    if (!catalogSearch.trim()) return CATALOG_ITEMS;
+    if (!catalogSearch.trim()) return savedProducts;
     const q = catalogSearch.toLowerCase().trim();
-    return CATALOG_ITEMS.filter(item => 
+    return savedProducts.filter(item => 
       item.code.toLowerCase().includes(q) || 
-      item.artikul.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q)
+      (item.artikul && item.artikul.toLowerCase().includes(q)) ||
+      (item.name && item.name.toLowerCase().includes(q))
     );
-  }, [catalogSearch]);
+  }, [catalogSearch, savedProducts]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -236,9 +262,13 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       // SaleType.ON_SITE - Customer details are optional!
     }
 
-    const invalidItems = items.some(item => (!item.code.trim() && !item.artikul?.trim()) || item.price <= 0 || item.quantity <= 0);
-    if (invalidItems) {
-      newErrors.items = 'Խնդրում ենք լրացնել ապրանքի կոդը կամ արտիկուլը, քանակը և գինը բոլոր տողերում';
+    if (items.length === 0) {
+      newErrors.items = 'Պատվերը պետք է ունենա առնվազն 1 ապրանք: Խնդրում ենք ավելացնել ապրանք:';
+    } else {
+      const invalidItems = items.some(item => (!item.code.trim() && !item.artikul?.trim()) || item.price <= 0 || item.quantity <= 0);
+      if (invalidItems) {
+        newErrors.items = 'Խնդրում ենք լրացնել ապրանքի կոդը կամ արտիկուլը, քանակը և գինը բոլոր տողերում';
+      }
     }
 
     setErrors(newErrors);
@@ -261,10 +291,14 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       ? PaymentStatus.PARTIAL 
       : PaymentStatus.UNPAID;
 
+    // Filter valid additional phone numbers
+    const validAdditionalPhones = additionalPhoneNumbers.filter(p => p.trim() !== '');
+
     const orderData: Order = {
       id: generateNextNumericOrderId(),
       customerName: customerDisplayName,
       phoneNumber: formData.phoneNumber,
+      additionalPhoneNumbers: validAdditionalPhones,
       purchaseDate: formData.purchaseDate,
       deliveryDate: formData.deliveryDate,
       address: formData.address.trim() || (isStoreSale ? 'Խանութ-Սրահ (Տեղում)' : formData.pickupBranch),
@@ -963,6 +997,41 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               {errors.phoneNumber && (
                 <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.phoneNumber}</p>
               )}
+
+              {/* Additional Phone Numbers */}
+              <div className="mt-2.5 space-y-2">
+                {additionalPhoneNumbers.map((phone, pIdx) => (
+                  <div key={pIdx} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Phone className="w-3.5 h-3.5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={phone}
+                        onChange={(e) => handleAdditionalPhoneChange(pIdx, e.target.value)}
+                        placeholder={`Հավելյալ հեռ. #${pIdx + 1} (+374...)`}
+                        className="input-field pl-9 font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAdditionalPhone(pIdx)}
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0"
+                      title="Հեռացնել"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddAdditionalPhone}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer border border-dashed border-indigo-200 mt-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Ավելացնել հավելյալ հեռախոսահամար</span>
+                </button>
+              </div>
             </div>
           </div>
 

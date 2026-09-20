@@ -692,9 +692,9 @@ ${itemsText}`;
                 </p>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Հեռախոսահամար
+                  Հեռախոսահամար(ներ)
                 </span>
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-black text-slate-800 text-xs">
@@ -710,6 +710,29 @@ ${itemsText}`;
                     </a>
                   )}
                 </div>
+
+                {/* Additional Phone Numbers list */}
+                {order.additionalPhoneNumbers && order.additionalPhoneNumbers.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+                    <span className="text-[9.5px] font-bold text-indigo-600 uppercase tracking-wider block">
+                      Հավելյալ Համարներ՝
+                    </span>
+                    {order.additionalPhoneNumbers.map((addPhone, aIdx) => (
+                      <div key={aIdx} className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-slate-700 text-[11px]">
+                          {addPhone}
+                        </span>
+                        <a
+                          href={`tel:${addPhone.replace(/\D/g, '')}`}
+                          className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-[9.5px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Phone className="w-2.5 h-2.5" />
+                          <span>Զանգել</span>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">

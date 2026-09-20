@@ -320,11 +320,17 @@ export default function OrderFeed({
           (item.name && item.name.toLowerCase().includes(searchLower))
         );
 
+        const addPhonesMatch = (order.additionalPhoneNumbers || []).some(addPhone => {
+          const addDigits = addPhone.replace(/\D/g, '');
+          return addPhone.toLowerCase().includes(searchLower) || (searchDigits.length > 0 && addDigits.includes(searchDigits));
+        });
+
         const matches = 
           order.id.toLowerCase().includes(searchLower) ||
           (order.customerName && order.customerName.toLowerCase().includes(searchLower)) ||
           (order.phoneNumber && order.phoneNumber.toLowerCase().includes(searchLower)) ||
           (searchDigits.length > 0 && orderPhoneDigits.includes(searchDigits)) ||
+          addPhonesMatch ||
           (order.address && order.address.toLowerCase().includes(searchLower)) ||
           itemCodesMatch;
 

@@ -66,6 +66,7 @@ export interface Order {
   id: string;
   customerName: string;
   phoneNumber: string;
+  additionalPhoneNumbers?: string[]; // Հավելյալ հեռախոսահամարներ
   purchaseDate: string;
   deliveryDate: string;
   address: string;

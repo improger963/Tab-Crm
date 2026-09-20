@@ -2,6 +2,101 @@ import { Client, Order, OrderStatus, OrderEvent, OrderItem, PaymentStatus, SaleT
 
 const STORAGE_KEYS = {
   ORDERS: 'crm_orders',
+  PRODUCTS: 'crm_products_catalog',
+};
+
+export interface ProductCatalogItem {
+  code: string;
+  artikul?: string;
+  name?: string;
+  price: number;
+  category?: string;
+  lastUpdated?: string;
+}
+
+// Get saved products from catalog + seed from all historical order items
+export const getSavedProducts = (): ProductCatalogItem[] => {
+  let catalogMap = new Map<string, ProductCatalogItem>();
+
+  // 1. Read explicitly stored products catalog
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    if (raw) {
+      const parsed: ProductCatalogItem[] = JSON.parse(raw);
+      parsed.forEach(p => {
+        if (p.code && p.code.trim()) {
+          catalogMap.set(p.code.trim().toLowerCase(), p);
+        }
+      });
+    }
+  } catch (e) {
+    console.error('Error reading products catalog', e);
+  }
+
+  // 2. Aggregate items from stored orders to ensure every historical product is remembered
+  try {
+    const rawOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+    if (rawOrders) {
+      const orders: Order[] = JSON.parse(rawOrders);
+      orders.forEach(o => {
+        (o.items || []).forEach(item => {
+          const cleanCode = (item.code || '').trim();
+          if (cleanCode && !catalogMap.has(cleanCode.toLowerCase())) {
+            catalogMap.set(cleanCode.toLowerCase(), {
+              code: cleanCode,
+              artikul: item.artikul || `ART-${cleanCode}`,
+              name: item.name || `Ապրանք #${cleanCode}`,
+              price: item.price || 0,
+              lastUpdated: o.purchaseDate || getTodayLocalYMD()
+            });
+          }
+        });
+      });
+    }
+  } catch (e) {
+    console.error('Error reading orders for products aggregation', e);
+  }
+
+  return Array.from(catalogMap.values());
+};
+
+// Save or update products in catalog
+export const saveProductsToCatalog = (newItems: Array<{ code: string; artikul?: string; name?: string; price: number }>) => {
+  if (!newItems || newItems.length === 0) return;
+
+  const currentProducts = getSavedProducts();
+  const catalogMap = new Map<string, ProductCatalogItem>();
+
+  currentProducts.forEach(p => {
+    catalogMap.set(p.code.toLowerCase(), p);
+  });
+
+  newItems.forEach(item => {
+    const cleanCode = (item.code || '').trim();
+    if (!cleanCode) return;
+
+    catalogMap.set(cleanCode.toLowerCase(), {
+      code: cleanCode,
+      artikul: item.artikul || `ART-${cleanCode}`,
+      name: item.name || catalogMap.get(cleanCode.toLowerCase())?.name || `Ապրանք #${cleanCode}`,
+      price: item.price !== undefined ? item.price : (catalogMap.get(cleanCode.toLowerCase())?.price || 0),
+      lastUpdated: getTodayLocalYMD()
+    });
+  });
+
+  const updatedList = Array.from(catalogMap.values());
+  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updatedList));
+};
+
+// Find product by code or artikul
+export const findProductByCode = (query: string): ProductCatalogItem | undefined => {
+  if (!query || !query.trim()) return undefined;
+  const q = query.trim().toLowerCase();
+  const products = getSavedProducts();
+  return products.find(p => 
+    p.code.toLowerCase() === q || 
+    (p.artikul && p.artikul.toLowerCase() === q)
+  );
 };
 
 export const toLocalYMD = (d: Date): string => {
@@ -236,6 +331,11 @@ export const saveOrder = (order: Order) => {
     updatedOrders.unshift(order);
   }
 
+  // Auto-save products to database
+  if (order.items && order.items.length > 0) {
+    saveProductsToCatalog(order.items);
+  }
+
   localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updatedOrders));
   return { orders: updatedOrders, clients: [] };
 };
@@ -248,6 +348,11 @@ export const updateOrder = (orderId: string, updates: Partial<Order>) => {
   const updatedOrders = [...orders];
   updatedOrders[orderIndex] = { ...updatedOrders[orderIndex], ...updates };
   
+  // Auto-save products to database if items were updated
+  if (updates.items && updates.items.length > 0) {
+    saveProductsToCatalog(updates.items);
+  }
+
   localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updatedOrders));
   return { orders: updatedOrders, clients: [] };
 };

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { posAudio } from '../lib/posAudio';
 import { Order, OrderItem } from '../types';
+import { getSavedProducts, ProductCatalogItem } from '../lib/storage';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
@@ -14,15 +15,6 @@ interface BarcodeScannerModalProps {
   onSelectOrder: (order: Order) => void;
   onCreateWithItem?: (item: { code: string; name: string; price: number }) => void;
 }
-
-const SAMPLE_BARCODES = [
-  { code: '4203', artikul: 'ART-4203', price: 28000, category: 'Կոշիկ' },
-  { code: '1118', artikul: 'ART-1118', price: 2500, category: 'Աքսեսուար' },
-  { code: '8832', artikul: 'ART-8832', price: 35000, category: 'Պայուսակ' },
-  { code: '5591', artikul: 'ART-5591', price: 9000, category: 'Աքսեսուար' },
-  { code: '7721', artikul: 'ART-7721', price: 22000, category: 'Հագուստ' },
-  { code: '9902', artikul: 'ART-9902', price: 48000, category: 'Հագուստ' },
-];
 
 export default function BarcodeScannerModal({
   isOpen,
@@ -36,8 +28,10 @@ export default function BarcodeScannerModal({
   const [matchResult, setMatchResult] = useState<{
     type: 'order' | 'product' | 'none';
     order?: Order;
-    product?: typeof SAMPLE_BARCODES[0];
+    product?: ProductCatalogItem;
   } | null>(null);
+
+  const savedProducts = getSavedProducts();
 
   useEffect(() => {
     if (isOpen) {
@@ -69,10 +63,10 @@ export default function BarcodeScannerModal({
       return;
     }
 
-    // 2. Check if matches catalog item SKU/Code or Artikul
-    const foundProduct = SAMPLE_BARCODES.find(p => 
+    // 2. Check if matches saved products database SKU/Code or Artikul
+    const foundProduct = savedProducts.find(p => 
       p.code.toLowerCase() === clean.toLowerCase() ||
-      (p as any).artikul?.toLowerCase() === clean.toLowerCase()
+      (p.artikul && p.artikul.toLowerCase() === clean.toLowerCase())
     );
     if (foundProduct) {
       posAudio.playSuccessChime();
@@ -202,30 +196,32 @@ export default function BarcodeScannerModal({
             </div>
 
             {/* Quick Test Barcode Buttons */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5 text-amber-500" />
-                  Փորձարկել Սկանը 1-Սեղմումով (Արագ SKU-ներ)՝
-                </span>
+            {savedProducts.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    Հիշված Ապրանքներ Բազայում (1-Սեղմումով)՝
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {savedProducts.slice(0, 6).map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => handleSimulateScan(item.code)}
+                      className="p-2 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all text-[11px] group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-black text-indigo-600 text-[11px]">{item.code}</span>
+                        <span className="font-mono text-[9.5px] text-slate-400 font-bold">{(item.price || 0).toLocaleString()}֏</span>
+                      </div>
+                      <p className="truncate text-[10px] text-indigo-700 font-bold mt-0.5">{item.name || item.artikul || 'Ապրանք'}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {SAMPLE_BARCODES.map((item) => (
-                  <button
-                    key={item.code}
-                    type="button"
-                    onClick={() => handleSimulateScan(item.code)}
-                    className="p-2 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-left transition-all text-[11px] group cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-black text-indigo-600 text-[11px]">{item.code}</span>
-                      <span className="font-mono text-[9.5px] text-slate-400 font-bold">{item.price.toLocaleString()}֏</span>
-                    </div>
-                    <p className="truncate text-[10px] text-indigo-700 font-bold mt-0.5">{item.category}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Match Result Display */}
             {matchResult && (
