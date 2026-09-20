@@ -17,7 +17,12 @@ interface ToastProps {
 
 export const ToastContainer: React.FC<ToastProps> = ({ toasts, onRemove }) => {
   return (
-    <div className="fixed top-6 right-6 z-[100] flex flex-col gap-3.5 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+      className="fixed top-6 right-6 z-[100] flex flex-col gap-3.5 pointer-events-none max-w-sm w-full px-4 sm:px-0"
+    >
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <motion.div
@@ -29,11 +34,11 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onRemove }) => {
             className="pointer-events-auto w-full"
           >
             <div className={`
-              flex items-center gap-4 px-5 py-4 rounded-[1.5rem] border backdrop-blur-xl
-              shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300
-              ${toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-100/80 text-emerald-950' : ''}
-              ${toast.type === 'save' ? 'bg-indigo-50/95 border-indigo-100/80 text-indigo-950' : ''}
-              ${toast.type === 'delete' ? 'bg-rose-50/95 border-rose-100/80 text-rose-955' : ''}
+              flex items-center gap-4 px-5 py-4 rounded-2xl border backdrop-blur-xl
+              shadow-lg transition-all duration-300
+              ${toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200/70 text-emerald-950' : ''}
+              ${toast.type === 'save' ? 'bg-indigo-50/95 border-indigo-200/70 text-indigo-950' : ''}
+              ${toast.type === 'delete' ? 'bg-rose-50/95 border-rose-200/70 text-rose-950' : ''}
               ${toast.type === 'warning' ? 'bg-amber-50/95 border-amber-200/80 text-amber-950' : ''}
             `}>
               <motion.div 
@@ -42,30 +47,32 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onRemove }) => {
                 transition={{ type: "spring", stiffness: 450, damping: 15, delay: 0.05 }}
                 className={`
                   h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
-                  ${toast.type === 'success' ? 'bg-emerald-500 text-white' : ''}
-                  ${toast.type === 'save' ? 'bg-indigo-600 text-white' : ''}
-                  ${toast.type === 'delete' ? 'bg-rose-600 text-white' : ''}
-                  ${toast.type === 'warning' ? 'bg-amber-500 text-white' : ''}
+                  ${toast.type === 'success' ? 'bg-success text-white' : ''}
+                  ${toast.type === 'save' ? 'bg-primary text-white' : ''}
+                  ${toast.type === 'delete' ? 'bg-danger text-white' : ''}
+                  ${toast.type === 'warning' ? 'bg-warning text-white' : ''}
                 `}
               >
-                {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />}
-                {toast.type === 'save' && <Save className="w-5 h-5 stroke-[2.2]" />}
-                {toast.type === 'delete' && <Trash2 className="w-5 h-5 stroke-[2.2]" />}
-                {toast.type === 'warning' && <AlertCircle className="w-5 h-5 stroke-[2.2]" />}
+                {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />}
+                {toast.type === 'save' && <Save className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />}
+                {toast.type === 'delete' && <Trash2 className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />}
+                {toast.type === 'warning' && <AlertCircle className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />}
               </motion.div>
               
               <div className="flex-1 text-left">
-                <p className="text-xs font-black tracking-tight leading-snug">{toast.message}</p>
-                <span className="text-[9px] opacity-60 font-bold block mt-0.5 uppercase tracking-widest">
+                <p className="text-sm font-semibold tracking-tight leading-snug">{toast.message}</p>
+                <span className="text-2xs opacity-60 font-semibold block mt-0.5 uppercase tracking-wider">
                   {toast.type === 'success' ? 'Հաջողված' : toast.type === 'save' ? 'Պահպանված' : toast.type === 'warning' ? 'Զգուշացում' : 'Հեռացված'} • Համակարգ
                 </span>
               </div>
 
               <button 
+                type="button"
                 onClick={() => onRemove(toast.id)}
-                className="p-1.5 hover:bg-black/5 active:scale-90 rounded-lg transition-all text-current opacity-40 hover:opacity-100 shrink-0"
+                aria-label="Փակել հաղորդագրությունը"
+                className="p-2 hover:bg-slate-900/10 active:scale-90 rounded-lg transition-all text-current opacity-50 hover:opacity-100 shrink-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </motion.div>

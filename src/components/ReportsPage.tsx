@@ -22,7 +22,9 @@ import {
   CheckCircle2,
   Clock,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Phone,
+  MapPin
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -555,7 +557,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
     <div className="space-y-5">
       
       {/* 1. TOP SYNCHRONOUS APP HEADER BANNER */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs">
+      <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Breadcrumb & Title */}
@@ -573,13 +575,13 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
+                <span className="p-1.5 bg-indigo-50 text-primary-ink rounded-lg border border-indigo-100">
                   <FileText className="w-4 h-4" />
                 </span>
-                <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                   Փաստաթղթերի & PDF Հաշվետվությունների Կենտրոն
                 </h1>
-                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/60 font-mono">
+                <span className="badge badge-primary font-mono tabular-nums">
                   {filteredOrders.length} պատվեր
                 </span>
               </div>
@@ -595,20 +597,20 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             {/* Copy Messenger Text */}
             <button
               onClick={handleCopyFormattedText}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-200"
+              className="btn btn-ghost"
               title="Պատճենել տեքստը Viber/WhatsApp/Telegram-ի համար"
             >
-              {copiedToast ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+              {copiedToast ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-slate-600" />}
               <span className="hidden sm:inline">{copiedToast ? 'Պատճենվեց' : 'Պատճենել'}</span>
             </button>
 
             {/* Email Share */}
             <button
               onClick={handleOpenEmailModal}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-200"
+              className="btn btn-ghost"
               title="Ուղարկել Էլ․ Փոստով"
             >
-              <Mail className="w-4 h-4 text-indigo-600" />
+              <Mail className="w-4 h-4 text-primary-ink" />
               <span className="hidden sm:inline">Email</span>
             </button>
 
@@ -618,17 +620,17 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
               className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-emerald-200"
               title="Արտահանել Excel / CSV ֆայլ"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
               <span>Excel (CSV)</span>
             </button>
 
             {/* Direct Print */}
             <button
               onClick={handleDirectPrint}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+              className="btn btn-dark"
               title="Ուղիղ Տպել թղթի վրա (A4 / Կտրոն)"
             >
-              <Printer className="w-4 h-4 text-slate-200" />
+              <Printer className="w-4 h-4 text-white/85" aria-hidden="true" />
               <span>Տպել</span>
             </button>
 
@@ -636,13 +638,13 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-md shadow-indigo-600/20 disabled:opacity-50"
+              className="btn btn-md btn-primary"
               title="Ներբեռնել PDF Ֆայլը"
             >
               {isGeneratingPdf ? (
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Download className="w-4 h-4 text-indigo-100" />
+                <Download className="w-4 h-4 text-white" aria-hidden="true" />
               )}
               <span>PDF Ներբեռնել</span>
             </button>
@@ -656,80 +658,80 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Metric 1: Revenue */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Հասույթ</span>
-            <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Հասույթ</span>
+            <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
               <DollarSign className="w-4 h-4" />
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 tracking-tight">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-slate-900 tracking-tight">
               {financialStats.totalRevenue.toLocaleString()}
             </span>
             <span className="text-xs font-bold text-slate-500">֏</span>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-medium text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Միջին չեկ՝</span>
             <span className="font-mono font-bold text-slate-700">{financialStats.avgCheck.toLocaleString()} ֏</span>
           </div>
         </div>
 
         {/* Metric 2: Orders Count */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Պատվերների Քանակ</span>
-            <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Պատվերների Քանակ</span>
+            <span className="p-2 bg-indigo-50 text-primary-ink rounded-xl">
               <Layers className="w-4 h-4" />
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-indigo-600 tracking-tight">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-primary-ink tracking-tight">
               {financialStats.ordersCount}
             </span>
             <span className="text-xs font-bold text-slate-500">հատ</span>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-medium text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Առաքումներ՝</span>
-            <span className="font-mono font-bold text-indigo-700">{deliveryOrders.length} առաքում</span>
+            <span className="font-mono font-bold text-primary-ink">{deliveryOrders.length} առաքում</span>
           </div>
         </div>
 
         {/* Metric 3: SKU & Units Total */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ապրանքների Քանակ</span>
-            <span className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ապրանքների Քանակ</span>
+            <span className="p-2 bg-amber-50 text-amber-700 rounded-xl">
               <Package className="w-4 h-4" />
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-amber-600 tracking-tight">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-amber-700 tracking-tight">
               {financialStats.totalItemsCount}
             </span>
             <span className="text-xs font-bold text-slate-500">հատ</span>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-medium text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Տեսականի (SKU)՝</span>
             <span className="font-mono font-bold text-slate-700">{supplierItemsManifest.length} տեսակ</span>
           </div>
         </div>
 
         {/* Metric 4: Cash vs Card */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Վճարումներ</span>
-            <span className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Վճարումներ</span>
+            <span className="p-2 bg-sky-50 text-sky-700 rounded-xl">
               <Receipt className="w-4 h-4" />
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 tracking-tight">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-slate-900 tracking-tight">
               {financialStats.totalPaid.toLocaleString()}
             </span>
             <span className="text-xs font-bold text-slate-500">֏ վճարված</span>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-medium text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Կանխիկ / Քարտ՝</span>
             <span className="font-mono font-bold text-slate-700">
               {financialStats.cashTotal.toLocaleString()} / {financialStats.cardTotal.toLocaleString()} ֏
@@ -750,22 +752,22 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           }}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
             activeDocType === 'delivery'
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
+              : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`p-2 rounded-xl ${activeDocType === 'delivery' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
+            <div className={`p-2 rounded-xl ${activeDocType === 'delivery' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-primary-ink'}`}>
               <Truck className="w-4 h-4" />
             </div>
-            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full ${
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
               activeDocType === 'delivery' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {displayDeliveryOrders.length}
             </span>
           </div>
-          <h3 className="text-xs font-black">1․ Առաքման Թերթիկ</h3>
-          <p className={`text-[10.5px] mt-0.5 line-clamp-1 ${activeDocType === 'delivery' ? 'text-indigo-100' : 'text-slate-400'}`}>
+          <h3 className="text-xs font-bold">1․ Առաքման Թերթիկ</h3>
+          <p className={`text-2xs mt-0.5 line-clamp-1 ${activeDocType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>
             Առաքիչների երթուղի, հասցեներ, գումար
           </p>
         </button>
@@ -778,22 +780,22 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           }}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
             activeDocType === 'pickup'
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
+              : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`p-2 rounded-xl ${activeDocType === 'pickup' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
+            <div className={`p-2 rounded-xl ${activeDocType === 'pickup' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-primary-ink'}`}>
               <ShoppingBag className="w-4 h-4" />
             </div>
-            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full ${
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
               activeDocType === 'pickup' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {displayPickupOrders.length}
             </span>
           </div>
-          <h3 className="text-xs font-black">2․ Խանութի Թերթիկ</h3>
-          <p className={`text-[10.5px] mt-0.5 line-clamp-1 ${activeDocType === 'pickup' ? 'text-indigo-100' : 'text-slate-400'}`}>
+          <h3 className="text-xs font-bold">2․ Խանութի Թերթիկ</h3>
+          <p className={`text-2xs mt-0.5 line-clamp-1 ${activeDocType === 'pickup' ? 'text-white/80' : 'text-slate-500'}`}>
             Մոտեցնելու և տեղում պատվերներ
           </p>
         </button>
@@ -806,22 +808,22 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           }}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
             activeDocType === 'supplier'
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
+              : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`p-2 rounded-xl ${activeDocType === 'supplier' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-600'}`}>
+            <div className={`p-2 rounded-xl ${activeDocType === 'supplier' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-700'}`}>
               <Package className="w-4 h-4" />
             </div>
-            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full ${
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
               activeDocType === 'supplier' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {supplierItemsManifest.length} SKU
             </span>
           </div>
-          <h3 className="text-xs font-black">3․ Մատակարարման Ցանկ</h3>
-          <p className={`text-[10.5px] mt-0.5 line-clamp-1 ${activeDocType === 'supplier' ? 'text-indigo-100' : 'text-slate-400'}`}>
+          <h3 className="text-xs font-bold">3․ Մատակարարման Ցանկ</h3>
+          <p className={`text-2xs mt-0.5 line-clamp-1 ${activeDocType === 'supplier' ? 'text-white/80' : 'text-slate-500'}`}>
             Համախմբված SKU կոդեր և քանակներ
           </p>
         </button>
@@ -834,22 +836,22 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           }}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
             activeDocType === 'financial'
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
+              : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`p-2 rounded-xl ${activeDocType === 'financial' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
+            <div className={`p-2 rounded-xl ${activeDocType === 'financial' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'}`}>
               <Receipt className="w-4 h-4" />
             </div>
-            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full ${
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
               activeDocType === 'financial' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               Z-Report
             </span>
           </div>
-          <h3 className="text-xs font-black">4․ Ֆինանսական Ամփոփագիր</h3>
-          <p className={`text-[10.5px] mt-0.5 line-clamp-1 ${activeDocType === 'financial' ? 'text-indigo-100' : 'text-slate-400'}`}>
+          <h3 className="text-xs font-bold">4․ Ֆինանսական Ամփոփագիր</h3>
+          <p className={`text-2xs mt-0.5 line-clamp-1 ${activeDocType === 'financial' ? 'text-white/80' : 'text-slate-500'}`}>
             Դրամարկղ, կանխիկ, POS քարտեր
           </p>
         </button>
@@ -862,22 +864,22 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           }}
           className={`col-span-2 sm:col-span-1 p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
             activeDocType === 'invoice'
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
+              : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className={`p-2 rounded-xl ${activeDocType === 'invoice' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'}`}>
+            <div className={`p-2 rounded-xl ${activeDocType === 'invoice' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-700'}`}>
               <Building className="w-4 h-4" />
             </div>
-            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full ${
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
               activeDocType === 'invoice' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               Invoice
             </span>
           </div>
-          <h3 className="text-xs font-black">5․ Հաշիվ-Ապրանքագիր</h3>
-          <p className={`text-[10.5px] mt-0.5 line-clamp-1 ${activeDocType === 'invoice' ? 'text-indigo-100' : 'text-slate-400'}`}>
+          <h3 className="text-xs font-bold">5․ Հաշիվ-Ապրանքագիր</h3>
+          <p className={`text-2xs mt-0.5 line-clamp-1 ${activeDocType === 'invoice' ? 'text-white/80' : 'text-slate-500'}`}>
             Պաշտոնական հաշիվ-ապրանքագիր
           </p>
         </button>
@@ -885,14 +887,14 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
       </div>
 
       {/* 4. SYNCHRONIZED FILTERS CONTROL BAR */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3">
+      <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3">
         
         {/* Row 1: Quick Date Presets & Custom Dates */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-              <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+              <Calendar className="w-3.5 h-3.5 text-primary-ink" />
               <span>Ամսաթիվ՝</span>
             </span>
 
@@ -912,7 +914,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   datePreset === preset.id
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-ink-inverse text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
@@ -927,26 +929,28 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
               <input
                 type="date"
                 value={customStartDate}
+                aria-label="Սկզբի ամսաթիվ"
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-white border border-slate-200 px-2 py-1 rounded-lg text-slate-800 font-mono font-bold focus:outline-none focus:border-indigo-500"
+                className="bg-surface border border-slate-200 px-2 py-1 rounded-lg text-slate-800 font-mono font-bold focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
               />
-              <span className="text-slate-400 font-bold">—</span>
+              <span className="text-slate-500 font-bold">—</span>
               <input
                 type="date"
                 value={customEndDate}
+                aria-label="Վերջի ամսաթիվ"
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-white border border-slate-200 px-2 py-1 rounded-lg text-slate-800 font-mono font-bold focus:outline-none focus:border-indigo-500"
+                className="bg-surface border border-slate-200 px-2 py-1 rounded-lg text-slate-800 font-mono font-bold focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
               />
             </div>
           )}
 
           {/* Live Zoom Controls for Preview */}
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <span className="text-[10.5px] font-bold text-slate-500 px-1.5">Մասշտաբ՝</span>
+            <span className="text-2xs font-bold text-slate-500 px-1.5">Մասշտաբ՝</span>
             <button
               onClick={() => setZoomLevel(80)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
-                zoomLevel === 80 ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 80 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               80%
@@ -954,7 +958,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={() => setZoomLevel(100)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
-                zoomLevel === 100 ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 100 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               100%
@@ -962,7 +966,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={() => setZoomLevel(120)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
-                zoomLevel === 120 ? 'bg-white shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 120 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               120%
@@ -976,18 +980,19 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           
           {/* Search Input */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
+              aria-label="Փնտրել ըստ կոդի, հաճախորդի, հասցեի, հեռախոսի"
               type="text"
               placeholder="Փնտրել ըստ կոդի, հաճախորդի, հասցեի, հեռախոսի..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -996,11 +1001,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
           {/* Status Filter */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500 font-bold text-[11px]">Կարգավիճակ՝</span>
+            <span className="text-slate-500 font-bold text-xs">Կարգավիճակ՝</span>
             <select
+              aria-label="Կարգավիճակ"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-indigo-500"
+              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
             >
               <option value="ALL">Բոլորը</option>
               {Object.values(OrderStatus).map(st => (
@@ -1011,11 +1017,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
           {/* Sale Type Filter */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500 font-bold text-[11px]">Տեսակ՝</span>
+            <span className="text-slate-500 font-bold text-xs">Տեսակ՝</span>
             <select
+              aria-label="Տեսակ"
               value={saleTypeFilter}
               onChange={(e) => setSaleTypeFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-indigo-500"
+              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
             >
               <option value="ALL">Բոլոր Տիպերը</option>
               {Object.values(SaleType).map(st => (
@@ -1027,11 +1034,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           {/* If Invoice Mode, Picker for Order */}
           {activeDocType === 'invoice' && filteredOrders.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-indigo-600 font-bold text-[11px]">Պատվեր՝</span>
+              <span className="text-primary-ink font-bold text-xs">Պատվեր՝</span>
               <select
+                aria-label="Պատվեր"
                 value={selectedInvoiceOrderId || (filteredOrders[0] ? filteredOrders[0].id : '')}
                 onChange={(e) => setSelectedInvoiceOrderId(e.target.value)}
-                className="bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-indigo-500 font-mono"
+                className="bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 font-mono"
               >
                 {filteredOrders.map(o => (
                   <option key={o.id} value={o.id}>
@@ -1057,7 +1065,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
       </div>
 
       {/* 5. A4 PAPER DOCUMENT CANVAS (ENTERPRISE PRESENTATION & PRINT PREVIEW) */}
-      <div className="bg-slate-200/80 border border-slate-300/80 rounded-3xl p-3 sm:p-8 overflow-x-auto flex justify-center shadow-inner">
+      <div className="bg-slate-200/80 border border-slate-300/80 rounded-2xl p-3 sm:p-8 overflow-x-auto flex justify-center shadow-inner">
         
         <div 
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
@@ -1066,7 +1074,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           {/* THE PRINTABLE / PDF SHEET */}
           <div 
             id="report-document-sheet" 
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 sm:p-12 shadow-2xl rounded-sm border border-slate-200 text-[11px] leading-relaxed flex flex-col justify-between"
+            className="w-[210mm] min-h-[297mm] bg-surface text-slate-900 p-8 sm:p-12 shadow-2xl rounded-sm border border-slate-200 text-xs leading-relaxed flex flex-col justify-between"
           >
             <div>
               
@@ -1077,23 +1085,23 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   {/* Left: Branding info */}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="bg-slate-900 text-white font-black text-xs px-2 py-0.5 rounded tracking-wider font-mono uppercase">
+                      <span className="bg-ink-inverse text-white font-black text-xs px-2 py-0.5 rounded tracking-wider font-mono uppercase">
                         tab.am POS
                       </span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">
                         Պաշտոնական Հաշվետվական Փաստաթուղթ
                       </span>
                     </div>
 
                     <h2 className="text-lg sm:text-xl font-black text-slate-950 uppercase tracking-tight mt-1.5">
-                      {activeDocType === 'delivery' && '🚚 ԱՌԱՔՄԱՆ ԹԵՐԹԻԿ (DELIVERY MANIFEST)'}
-                      {activeDocType === 'pickup' && '🏪 ԽԱՆՈՒԹԻ ԵՎ ՄՈՏԵՑՄԱՆ ԹԵՐԹԻԿ (STORE PICKUP MANIFEST)'}
-                      {activeDocType === 'supplier' && '📦 ՄԱՏԱԿԱՐԱՐՄԱՆ ԱՊՐԱՆՔԱՑԱՆԿ (SUPPLIER PURCHASE MANIFEST)'}
-                      {activeDocType === 'financial' && '🧾 ՖԻՆԱՆՍԱԿԱՆ ԵՎ ԴՐԱՄԱՐԿՂԻ ԱՄՓՈՓԱԳԻՐ (Z-REPORT)'}
+                      {activeDocType === 'delivery' && 'ԱՌԱՔՄԱՆ ԹԵՐԹԻԿ (DELIVERY MANIFEST)'}
+                      {activeDocType === 'pickup' && 'ԽԱՆՈՒԹԻ ԵՎ ՄՈՏԵՑՄԱՆ ԹԵՐԹԻԿ (STORE PICKUP MANIFEST)'}
+                      {activeDocType === 'supplier' && 'ՄԱՏԱԿԱՐԱՐՄԱՆ ԱՊՐԱՆՔԱՑԱՆԿ (SUPPLIER PURCHASE MANIFEST)'}
+                      {activeDocType === 'financial' && 'ՖԻՆԱՆՍԱԿԱՆ ԵՎ ԴՐԱՄԱՐԿՂԻ ԱՄՓՈՓԱԳԻՐ (Z-REPORT)'}
                       {activeDocType === 'invoice' && `📄 ՀԱՇԻՎ-ԱՊՐԱՆՔԱԳԻՐ #${invoiceOrder ? invoiceOrder.id : '---'}`}
                     </h2>
 
-                    <div className="text-[10px] text-slate-600 font-medium space-y-0.5 mt-1">
+                    <div className="text-2xs text-slate-600 font-medium space-y-0.5 mt-1">
                       <p><span className="font-bold">Կազմակերպություն՝</span> {companyInfo.name} • {companyInfo.branch}</p>
                       <p><span className="font-bold">Հասցե / Հեռախոս՝</span> {companyInfo.address} • {companyInfo.phone}</p>
                       <p><span className="font-bold">ՀՎՀՀ՝</span> {companyInfo.taxNumber}</p>
@@ -1102,14 +1110,14 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
                   {/* Right: Meta Badge & Date */}
                   <div className="text-right space-y-1 font-mono">
-                    <div className="inline-block bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded">
+                    <div className="inline-block bg-ink-inverse text-white text-2xs font-black px-3 py-1 rounded">
                       {activeDocType === 'delivery' && `${displayDeliveryOrders.length} ՊԱՏՎԵՐ`}
                       {activeDocType === 'pickup' && `${displayPickupOrders.length} ՊԱՏՎԵՐ`}
                       {activeDocType === 'supplier' && `${supplierItemsManifest.length} SKU ԱՊՐԱՆՔ`}
                       {activeDocType === 'financial' && `ՀԱՍՈՒՅԹ՝ ${financialStats.totalRevenue.toLocaleString()} ֏`}
                       {activeDocType === 'invoice' && `ԳՈՒՄԱՐ՝ ${(invoiceOrder?.totalAmount || 0).toLocaleString()} ֏`}
                     </div>
-                    <div className="text-[10px] text-slate-600 space-y-0.5">
+                    <div className="text-2xs text-slate-600 space-y-0.5">
                       <p><span className="font-bold">Ամսաթիվ՝</span> {dateRangeBounds.label}</p>
                       <p><span className="font-bold">Տպման պահը՝</span> {new Date().toLocaleDateString('hy-AM')} {new Date().toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}</p>
                       <p><span className="font-bold">Կարգավիճակ՝</span> {statusFilter === 'ALL' ? 'Բոլորը' : statusFilter}</p>
@@ -1121,15 +1129,15 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
               {/* EMPTY STATE IF 0 ORDERS IN FILTER */}
               {filteredOrders.length === 0 ? (
-                <div className="py-16 text-center border-2 border-dashed border-slate-300 rounded-2xl my-6 bg-slate-50 p-6">
-                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-                  <h4 className="text-base font-black text-slate-800">Ընտրված ֆիլտրերով պատվերներ չեն գտնվել</h4>
+                <div className="state-card my-6">
+                  <div className="state-icon bg-amber-50 border-amber-200 text-amber-700"><AlertCircle className="w-7 h-7" /></div>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-1">Ընտրված ֆիլտրերով պատվերներ չեն գտնվել</h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
                     Համակարգում առկա է ընդհանուր <strong className="text-slate-800">{orders.length} պատվեր</strong>։ Սեղմեք ստորև կոճակը՝ բոլոր պատվերները PDF-ում ներառելու համար։
                   </p>
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                    className="btn btn-md btn-primary"
                   >
                     Ցուցադրել Բոլոր Պատվերները ({orders.length} պատվեր)
                   </button>
@@ -1143,7 +1151,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                     <div className="space-y-4">
                       <table className="w-full text-left border-collapse border border-slate-300">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-[10px] font-black uppercase">
+                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-2xs font-black uppercase">
                             <th className="p-2 border-r border-slate-300 w-8 text-center">№</th>
                             <th className="p-2 border-r border-slate-300 w-24">ID / Ամսաթիվ</th>
                             <th className="p-2 border-r border-slate-300 w-44">Հաճախորդ & Հեռախոս</th>
@@ -1155,12 +1163,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {displayDeliveryOrders.map((order, idx) => (
-                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-surface' : 'bg-slate-50/50'}>
                               <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{idx + 1}</td>
                               <td className="p-2 border-r border-slate-300 font-mono">
                                 <div className="font-bold text-slate-950">#{order.id}</div>
-                                <div className="text-[9px] text-slate-500">{order.purchaseDate || '---'}</div>
-                                <span className="inline-block px-1.5 py-0.2 rounded text-[8.5px] font-bold mt-0.5 bg-slate-100 border border-slate-200 text-slate-700">
+                                <div className="text-2xs text-slate-500">{order.purchaseDate || '---'}</div>
+                                <span className="inline-block px-1.5 py-0.5 rounded text-2xs font-bold mt-0.5 bg-slate-100 border border-slate-200 text-slate-700">
                                   {order.saleType}
                                 </span>
                               </td>
@@ -1171,7 +1179,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                               <td className="p-2 border-r border-slate-300">
                                 <div className="font-medium text-slate-800">{order.address || 'Հասցեն նշված չէ'}</div>
                                 {(order.cashierNote || order.notes) && (
-                                  <div className="text-[9.5px] text-indigo-900 bg-indigo-50/60 p-1 rounded mt-1 border border-indigo-100 font-medium">
+                                  <div className="text-2xs text-indigo-900 bg-indigo-50/60 p-1 rounded mt-1 border border-indigo-100 font-medium">
                                     💬 {order.cashierNote || order.notes}
                                   </div>
                                 )}
@@ -1179,7 +1187,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                               <td className="p-2 border-r border-slate-300">
                                 <div className="space-y-0.5">
                                   {(order.items && order.items.length > 0 ? order.items : []).map((it, i) => (
-                                    <div key={i} className="flex justify-between items-center text-[9.5px]">
+                                    <div key={i} className="flex justify-between items-center text-2xs">
                                       <span className="font-mono font-bold text-slate-700 truncate max-w-[120px]">
                                         [{it.code || 'SKU'}] {it.name || ''}
                                       </span>
@@ -1189,26 +1197,26 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                                     </div>
                                   ))}
                                   {(!order.items || order.items.length === 0) && (
-                                    <span className="text-[9.5px] text-slate-400">1 հատ (Ընդհանուր)</span>
+                                    <span className="text-2xs text-slate-500">1 հատ (Ընդհանուր)</span>
                                   )}
                                 </div>
                               </td>
                               <td className="p-2 border-r border-slate-300 text-right font-mono">
                                 <div className="font-black text-slate-950 text-xs">{(order.totalAmount || 0).toLocaleString()} ֏</div>
-                                <div className="text-[9px] font-bold text-slate-500">{order.paymentMethod || 'Կանխիկ'}</div>
-                                <div className={`text-[8.5px] font-bold ${order.paymentStatus === PaymentStatus.PAID ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                <div className="text-2xs font-bold text-slate-500">{order.paymentMethod || 'Կանխիկ'}</div>
+                                <div className={`text-2xs font-bold ${order.paymentStatus === PaymentStatus.PAID ? 'text-emerald-700' : 'text-amber-700'}`}>
                                   {order.paymentStatus}
                                 </div>
                               </td>
                               <td className="p-2 text-center align-bottom pb-1">
                                 <div className="w-full border-b border-slate-400 border-dashed mb-1 h-6"></div>
-                                <span className="text-[8px] text-slate-400">ստացա / ստորագր․</span>
+                                <span className="text-2xs text-slate-500">ստացա / ստորագր․</span>
                               </td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-slate-900 text-white font-black text-xs">
+                          <tr className="bg-ink-inverse text-white font-black text-xs">
                             <td colSpan={5} className="p-2.5 text-right uppercase">ԸՆԴԱՄԵՆԸ ({displayDeliveryOrders.length} ՊԱՏՎԵՐ)․</td>
                             <td className="p-2.5 text-right font-mono font-black">
                               {displayDeliveryOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0).toLocaleString()} ֏
@@ -1225,7 +1233,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                     <div className="space-y-4">
                       <table className="w-full text-left border-collapse border border-slate-300">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-[10px] font-black uppercase">
+                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-2xs font-black uppercase">
                             <th className="p-2 border-r border-slate-300 w-8 text-center">№</th>
                             <th className="p-2 border-r border-slate-300 w-24">ID / Ամսաթիվ</th>
                             <th className="p-2 border-r border-slate-300 w-44">Հաճախորդ & Հեռախոս</th>
@@ -1237,11 +1245,11 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {displayPickupOrders.map((order, idx) => (
-                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-surface' : 'bg-slate-50/50'}>
                               <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{idx + 1}</td>
                               <td className="p-2 border-r border-slate-300 font-mono">
                                 <div className="font-bold text-slate-950">#{order.id}</div>
-                                <div className="text-[9px] text-slate-500">{order.purchaseDate || '---'}</div>
+                                <div className="text-2xs text-slate-500">{order.purchaseDate || '---'}</div>
                               </td>
                               <td className="p-2 border-r border-slate-300">
                                 <div className="font-bold text-slate-900">{order.customerName || 'Անհայտ հաճախորդ'}</div>
@@ -1249,12 +1257,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                               </td>
                               <td className="p-2 border-r border-slate-300 font-medium">
                                 <div className="font-bold text-slate-800">{order.pickupBranch || 'Գլխավոր Սրահ'}</div>
-                                <div className="text-[9px] text-slate-500">{order.saleType}</div>
+                                <div className="text-2xs text-slate-500">{order.saleType}</div>
                               </td>
                               <td className="p-2 border-r border-slate-300">
                                 <div className="space-y-0.5">
                                   {(order.items && order.items.length > 0 ? order.items : []).map((it, i) => (
-                                    <div key={i} className="flex justify-between items-center text-[9.5px]">
+                                    <div key={i} className="flex justify-between items-center text-2xs">
                                       <span className="font-mono font-bold text-slate-700 truncate max-w-[160px]">
                                         [{it.code || 'SKU'}] {it.name || ''}
                                       </span>
@@ -1264,15 +1272,15 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                                     </div>
                                   ))}
                                   {(!order.items || order.items.length === 0) && (
-                                    <span className="text-[9.5px] text-slate-400">1 հատ</span>
+                                    <span className="text-2xs text-slate-500">1 հատ</span>
                                   )}
                                 </div>
                               </td>
                               <td className="p-2 border-r border-slate-300 text-right font-mono">
                                 <div className="font-black text-slate-950 text-xs">{(order.totalAmount || 0).toLocaleString()} ֏</div>
-                                <div className="text-[9px] font-bold text-slate-500">{order.paymentMethod || 'Կանխիկ'}</div>
+                                <div className="text-2xs font-bold text-slate-500">{order.paymentMethod || 'Կանխիկ'}</div>
                               </td>
-                              <td className="p-2 text-center font-bold text-[9px]">
+                              <td className="p-2 text-center font-bold text-2xs">
                                 <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
                                   {order.status}
                                 </span>
@@ -1281,7 +1289,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-slate-900 text-white font-black text-xs">
+                          <tr className="bg-ink-inverse text-white font-black text-xs">
                             <td colSpan={5} className="p-2.5 text-right uppercase">ԸՆԴԱՄԵՆԸ ({displayPickupOrders.length} ՊԱՏՎԵՐ)․</td>
                             <td className="p-2.5 text-right font-mono font-black">
                               {displayPickupOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0).toLocaleString()} ֏
@@ -1296,14 +1304,14 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   {/* 3. SUPPLIER SKU MANIFEST TABLE */}
                   {activeDocType === 'supplier' && (
                     <div className="space-y-4">
-                      <div className="bg-amber-50 border border-amber-200 p-2.5 rounded text-amber-900 text-[10.5px] font-medium flex items-center justify-between">
-                        <span>📦 Համախմբված ապրանքացանկ՝ ըստ SKU կոդերի, գործարանային արտիկուլների և պահանջվող քանակների․</span>
+                      <div className="bg-amber-50 border border-amber-200 p-2.5 rounded text-amber-900 text-2xs font-medium flex items-center justify-between">
+                        <span>Համախմբված ապրանքացանկ՝ ըստ SKU կոդերի, գործարանային արտիկուլների և պահանջվող քանակների․</span>
                         <span className="font-bold font-mono">{supplierItemsManifest.length} տեսակ SKU</span>
                       </div>
 
                       <table className="w-full text-left border-collapse border border-slate-300">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-[10px] font-black uppercase">
+                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-2xs font-black uppercase">
                             <th className="p-2 border-r border-slate-300 w-8 text-center">№</th>
                             <th className="p-2 border-r border-slate-300 w-28">Կոդ (SKU)</th>
                             <th className="p-2 border-r border-slate-300 w-28">Արտիկուլ</th>
@@ -1316,7 +1324,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {supplierItemsManifest.map((item, idx) => (
-                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-surface' : 'bg-slate-50/50'}>
                               <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{idx + 1}</td>
                               <td className="p-2 border-r border-slate-300 font-mono font-black text-indigo-900">{item.code}</td>
                               <td className="p-2 border-r border-slate-300 font-mono font-bold text-slate-600">{item.artikul}</td>
@@ -1330,16 +1338,16 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                               <td className="p-2 border-r border-slate-300 text-right font-mono font-black text-slate-950">
                                 {item.totalCost.toLocaleString()} ֏
                               </td>
-                              <td className="p-2 font-mono text-[9px] text-slate-500">
+                              <td className="p-2 font-mono text-2xs text-slate-500">
                                 {item.orderIds.map(id => `#${id}`).join(', ')}
                               </td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-slate-900 text-white font-black text-xs">
+                          <tr className="bg-ink-inverse text-white font-black text-xs">
                             <td colSpan={4} className="p-2.5 text-right uppercase">ԸՆԴԱՄԵՆԸ ՄԱՏԱԿԱՐԱՐՄԱՆ ՀԱՄԱՐ․</td>
-                            <td className="p-2.5 text-center font-mono font-black text-sm bg-slate-800">
+                            <td className="p-2.5 text-center font-mono font-black text-sm bg-ink-inverse">
                               {supplierItemsManifest.reduce((s, i) => s + i.totalQuantity, 0)} հատ
                             </td>
                             <td></td>
@@ -1360,28 +1368,28 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                       {/* Financial Metrics Cards inside A4 */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="border border-slate-300 p-3 bg-slate-50 rounded">
-                          <span className="text-[9px] font-bold uppercase text-slate-500 block">Ընդհանուր Շրջանառություն</span>
+                          <span className="text-2xs font-bold uppercase text-slate-500 block">Ընդհանուր Շրջանառություն</span>
                           <span className="text-base font-black font-mono text-slate-950">{financialStats.totalRevenue.toLocaleString()} ֏</span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5">{financialStats.ordersCount} պատվեր / {financialStats.totalItemsCount} ապրանք</span>
+                          <span className="text-2xs text-slate-500 block mt-0.5">{financialStats.ordersCount} պատվեր / {financialStats.totalItemsCount} ապրանք</span>
                         </div>
 
                         <div className="border border-slate-300 p-3 bg-slate-50 rounded">
-                          <span className="text-[9px] font-bold uppercase text-slate-500 block">Կանխիկ Վճարումներ</span>
+                          <span className="text-2xs font-bold uppercase text-slate-500 block">Կանխիկ Վճարումներ</span>
                           <span className="text-base font-black font-mono text-emerald-800">{financialStats.cashTotal.toLocaleString()} ֏</span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5">Դրամարկղի կանխիկ մնացորդ</span>
+                          <span className="text-2xs text-slate-500 block mt-0.5">Դրամարկղի կանխիկ մնացորդ</span>
                         </div>
 
                         <div className="border border-slate-300 p-3 bg-slate-50 rounded">
-                          <span className="text-[9px] font-bold uppercase text-slate-500 block">Անկանխիկ (POS Քարտ + Idram)</span>
-                          <span className="text-base font-black font-mono text-blue-800">{(financialStats.cardTotal + financialStats.idramTotal + financialStats.transferTotal).toLocaleString()} ֏</span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5">Բանկային հաշվեհամարներ</span>
+                          <span className="text-2xs font-bold uppercase text-slate-500 block">Անկանխիկ (POS Քարտ + Idram)</span>
+                          <span className="text-base font-black font-mono text-sky-800">{(financialStats.cardTotal + financialStats.idramTotal + financialStats.transferTotal).toLocaleString()} ֏</span>
+                          <span className="text-2xs text-slate-500 block mt-0.5">Բանկային հաշվեհամարներ</span>
                         </div>
                       </div>
 
                       {/* Orders Log for Audit */}
                       <table className="w-full text-left border-collapse border border-slate-300">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-[10px] font-black uppercase">
+                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-2xs font-black uppercase">
                             <th className="p-2 border-r border-slate-300 w-8 text-center">№</th>
                             <th className="p-2 border-r border-slate-300 w-24">ID</th>
                             <th className="p-2 border-r border-slate-300 w-28">Ամսաթիվ</th>
@@ -1393,13 +1401,13 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {filteredOrders.map((order, idx) => (
-                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                            <tr key={order.id} className={idx % 2 === 0 ? 'bg-surface' : 'bg-slate-50/50'}>
                               <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{idx + 1}</td>
                               <td className="p-2 border-r border-slate-300 font-mono font-bold text-slate-900">#{order.id}</td>
-                              <td className="p-2 border-r border-slate-300 font-mono text-[9.5px] text-slate-600">{order.purchaseDate || '---'}</td>
+                              <td className="p-2 border-r border-slate-300 font-mono text-2xs text-slate-600">{order.purchaseDate || '---'}</td>
                               <td className="p-2 border-r border-slate-300 font-medium text-slate-900">{order.customerName || 'Անհայտ'}</td>
                               <td className="p-2 border-r border-slate-300 font-bold text-slate-700">{order.paymentMethod || 'Կանխիկ'}</td>
-                              <td className="p-2 border-r border-slate-300 text-center font-bold text-[9px]">
+                              <td className="p-2 border-r border-slate-300 text-center font-bold text-2xs">
                                 <span className={`px-2 py-0.5 rounded ${order.paymentStatus === PaymentStatus.PAID ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                                   {order.paymentStatus}
                                 </span>
@@ -1409,7 +1417,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-slate-900 text-white font-black text-xs">
+                          <tr className="bg-ink-inverse text-white font-black text-xs">
                             <td colSpan={6} className="p-2.5 text-right uppercase">ԸՆԴԱՄԵՆԸ ՀԱՍՈՒՅԹ․</td>
                             <td className="p-2.5 text-right font-mono font-black text-sm">
                               {financialStats.totalRevenue.toLocaleString()} ֏
@@ -1427,13 +1435,13 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                       {/* Customer & Order Metadata */}
                       <div className="grid grid-cols-2 gap-6 p-4 border border-slate-300 bg-slate-50 rounded">
                         <div>
-                          <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">ԳՆՈՐԴ / ՀԱՃԱԽՈՐԴ</span>
+                          <span className="text-2xs font-black uppercase text-slate-500 tracking-wider block mb-1">ԳՆՈՐԴ / ՀԱՃԱԽՈՐԴ</span>
                           <p className="text-sm font-black text-slate-900">{invoiceOrder.customerName || 'Անհայտ Հաճախորդ'}</p>
-                          <p className="text-xs text-slate-700 font-mono font-bold mt-0.5">📞 {invoiceOrder.phoneNumber || '---'}</p>
-                          <p className="text-xs text-slate-600 mt-0.5">📍 {invoiceOrder.address || 'Հասցեն նշված չէ'}</p>
+                          <p className="text-xs text-slate-700 font-mono font-bold mt-0.5"><Phone className="w-3 h-3 shrink-0 inline-block" aria-hidden="true" /> {invoiceOrder.phoneNumber || '---'}</p>
+                          <p className="text-xs text-slate-600 mt-0.5"><MapPin className="w-3 h-3 shrink-0 inline-block" aria-hidden="true" /> {invoiceOrder.address || 'Հասցեն նշված չէ'}</p>
                         </div>
                         <div className="text-right">
-                          <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">ՊԱՏՎԵՐԻ ՏՎՅԱԼՆԵՐ</span>
+                          <span className="text-2xs font-black uppercase text-slate-500 tracking-wider block mb-1">ՊԱՏՎԵՐԻ ՏՎՅԱԼՆԵՐ</span>
                           <p className="text-sm font-black font-mono text-slate-900">Համար՝ #{invoiceOrder.id}</p>
                           <p className="text-xs text-slate-700 mt-0.5">Ամսաթիվ՝ <span className="font-mono font-bold">{invoiceOrder.purchaseDate || todayStr}</span></p>
                           <p className="text-xs text-slate-600 mt-0.5">Տեսակ՝ <span className="font-bold">{invoiceOrder.saleType}</span></p>
@@ -1444,7 +1452,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                       {/* Items Table */}
                       <table className="w-full text-left border-collapse border border-slate-300">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-[10px] font-black uppercase">
+                          <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 text-2xs font-black uppercase">
                             <th className="p-2 border-r border-slate-300 w-8 text-center">№</th>
                             <th className="p-2 border-r border-slate-300 w-28">Կոդ (SKU)</th>
                             <th className="p-2 border-r border-slate-300">Ապրանքի Նկարագրություն</th>
@@ -1457,7 +1465,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                           {(invoiceOrder.items && invoiceOrder.items.length > 0 ? invoiceOrder.items : [
                             { id: '1', code: 'PROD-01', name: 'Ապրանք / Ծառայություն', quantity: 1, price: invoiceOrder.totalAmount }
                           ]).map((item: any, idx: number) => (
-                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-surface' : 'bg-slate-50/50'}>
                               <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{idx + 1}</td>
                               <td className="p-2 border-r border-slate-300 font-mono font-bold text-slate-800">{item.code || '---'}</td>
                               <td className="p-2 border-r border-slate-300 font-medium text-slate-900">{item.name || 'Ապրանք'}</td>
@@ -1468,7 +1476,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-slate-900 text-white font-black text-xs">
+                          <tr className="bg-ink-inverse text-white font-black text-xs">
                             <td colSpan={5} className="p-2.5 text-right uppercase">ԸՆԴԱՄԵՆԸ ՎՃԱՐՄԱՆ ԵՆԹԱԿԱ ԳՈՒՄԱՐ․</td>
                             <td className="p-2.5 text-right font-mono font-black text-sm">
                               {(invoiceOrder.totalAmount || 0).toLocaleString()} ֏
@@ -1493,27 +1501,27 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
             {/* DOCUMENT FOOTER & OFFICIAL SIGNATURE BLOCKS */}
             <div className="mt-12 pt-6 border-t-2 border-slate-900">
-              <div className="grid grid-cols-3 gap-6 text-[10px] text-slate-700 font-medium">
+              <div className="grid grid-cols-3 gap-6 text-2xs text-slate-700 font-medium">
                 <div>
                   <span className="font-bold block mb-1">Հանձնեց (Գանձապահ/Օպերատոր)՝</span>
                   <div className="border-b border-slate-400 border-dashed h-6 mb-1"></div>
-                  <span className="text-[9px] text-slate-400">{companyInfo.operator}</span>
+                  <span className="text-2xs text-slate-500">{companyInfo.operator}</span>
                 </div>
 
                 <div>
                   <span className="font-bold block mb-1">Առաքիչ / Փոխադրող՝</span>
                   <div className="border-b border-slate-400 border-dashed h-6 mb-1"></div>
-                  <span className="text-[9px] text-slate-400">ստորագրություն և ա․ա․հ․</span>
+                  <span className="text-2xs text-slate-500">ստորագրություն և ա․ա․հ․</span>
                 </div>
 
                 <div>
                   <span className="font-bold block mb-1">Ստացավ (Գնորդ / Պատասխանատու)՝</span>
                   <div className="border-b border-slate-400 border-dashed h-6 mb-1"></div>
-                  <span className="text-[9px] text-slate-400">ստորագրություն և ամսաթիվ</span>
+                  <span className="text-2xs text-slate-500">ստորագրություն և ամսաթիվ</span>
                 </div>
               </div>
 
-              <div className="mt-4 text-center text-[8.5px] text-slate-400 border-t border-slate-100 pt-2 font-mono">
+              <div className="mt-4 text-center text-2xs text-slate-500 border-t border-slate-100 pt-2 font-mono">
                 Փաստաթուղթը գեներացված է «tab.am Cloud POS System»-ի կողմից • ID: {docTitle} • Էջ 1 / 1
               </div>
             </div>
@@ -1525,16 +1533,16 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
       {/* 6. EMAIL MODAL */}
       {isEmailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px]">
+          <div className="bg-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200/80 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Mail className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary-ink" />
                 <span>Ուղարկել Փաստաթուղթը Էլ․ Փոստով</span>
               </h3>
               <button
                 onClick={() => setIsEmailModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1544,32 +1552,35 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Ստացողի Էլ․ Հասցե (Email)</label>
                 <input
+                  aria-label="Ստացողի Էլ․ Հասցե (Email)"
                   type="email"
                   required
                   placeholder="example@gmail.com"
                   value={emailRecipient}
                   onChange={(e) => setEmailRecipient(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Թեմա (Subject)</label>
                 <input
+                  aria-label="Թեմա (Subject)"
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Նամակի Տեքստ</label>
                 <textarea
+                  aria-label="Նամակի Տեքստ"
                   rows={6}
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface resize-none"
                 />
               </div>
 
@@ -1583,7 +1594,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-indigo-600/20 flex items-center gap-2"
+                  className="px-4 py-2 bg-primary hover:bg-primary-strong text-white text-xs font-semibold rounded-lg shadow-sm shadow-indigo-600/20 flex items-center gap-2 active:scale-[0.98] transition-all"
                 >
                   {emailSentSuccess ? <Check className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
                   <span>{emailSentSuccess ? 'Ուղարկվեց' : 'Ուղարկել'}</span>

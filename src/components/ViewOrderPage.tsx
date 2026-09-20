@@ -64,7 +64,7 @@ export default function ViewOrderPage({
 👤 Սրահի աշխատակից՝ ${order.salesRep || '---'}
 💳 Վճարման պայման՝ ${order.paymentTerms || PaymentTerms.FULL}
 💵 Վճարման եղանակ՝ ${order.paymentMethod || PaymentMethod.CASH}
-⚡ Վճարման վիճակ՝ ${order.paymentStatus || PaymentStatus.UNPAID}
+Վճարման վիճակ՝ ${order.paymentStatus || PaymentStatus.UNPAID}
 💰 Ընդհանուր գումար՝ ${order.totalAmount?.toLocaleString()} ֏
 ${order.paymentTerms === PaymentTerms.PREPAYMENT ? `🟡 Մասնակի վճարում՝ ${(order.prepaymentAmount || 0).toLocaleString()} ֏ | Մնացորդ՝ ${(order.remainingBalance || 0).toLocaleString()} ֏\n` : ''}🏷️ POS Կոդեր՝ ${(order.items || []).map(i => i.code).filter(Boolean).join(', ')}
 🏭 Արտիկուլներ (Gorcaranayin)՝ ${(order.items || []).map(i => i.artikul).filter(Boolean).join(', ')}
@@ -83,54 +83,54 @@ ${itemsText}`;
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.PENDING:
-        return 'bg-amber-50 text-amber-800 border-amber-200/80';
+        return 'badge-warning';
       case OrderStatus.SOLD:
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
+        return 'badge-success';
       case OrderStatus.IN_TRANSIT:
-        return 'bg-sky-50 text-sky-800 border-sky-200/80';
+        return 'badge-info';
       case OrderStatus.DELIVERED:
-        return 'bg-indigo-50 text-indigo-800 border-indigo-200/80';
+        return 'badge-primary';
       case OrderStatus.CANCELLED:
-        return 'bg-rose-50 text-rose-800 border-rose-200/80';
+        return 'badge-danger';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'badge-neutral';
     }
   };
 
   const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case PaymentStatus.PAID:
-        return 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        return 'badge-success';
       case PaymentStatus.PARTIAL:
-        return 'bg-amber-50 text-amber-800 border-amber-300';
+        return 'badge-warning';
       case PaymentStatus.UNPAID:
       default:
-        return 'bg-rose-50 text-rose-700 border-rose-200';
+        return 'badge-danger';
     }
   };
 
   const getPaymentMethodIcon = (method?: PaymentMethod | string) => {
     switch (method) {
       case PaymentMethod.CARD:
-        return <CreditCard className="w-4 h-4 text-sky-600 shrink-0" />;
+        return <CreditCard className="w-4 h-4 text-sky-700 shrink-0" />;
       case PaymentMethod.IDRAM:
-        return <Smartphone className="w-4 h-4 text-amber-600 shrink-0" />;
+        return <Smartphone className="w-4 h-4 text-amber-700 shrink-0" />;
       case PaymentMethod.TRANSFER:
-        return <ArrowRightLeft className="w-4 h-4 text-indigo-600 shrink-0" />;
+        return <ArrowRightLeft className="w-4 h-4 text-primary-ink shrink-0" />;
       case PaymentMethod.CASH:
       default:
-        return <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />;
+        return <DollarSign className="w-4 h-4 text-emerald-700 shrink-0" />;
     }
   };
 
   const getSaleTypeIcon = (type: SaleType) => {
     switch (type) {
       case SaleType.DELIVERY:
-        return <Truck className="w-4 h-4 text-sky-600" />;
+        return <Truck className="w-4 h-4 text-sky-700" />;
       case SaleType.PICKUP:
-        return <Store className="w-4 h-4 text-amber-600" />;
+        return <Store className="w-4 h-4 text-amber-700" />;
       default:
-        return <ShoppingBag className="w-4 h-4 text-indigo-600" />;
+        return <ShoppingBag className="w-4 h-4 text-primary-ink" />;
     }
   };
 
@@ -182,7 +182,7 @@ ${itemsText}`;
       className="max-w-6xl mx-auto space-y-6 pb-20"
     >
       {/* Top Action Bar */}
-      <div className="bg-white p-5 md:p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface p-5 md:p-6 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -193,21 +193,21 @@ ${itemsText}`;
           </button>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
                 {order.id}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-slate-50 border border-slate-200 text-slate-700">
+              <span className="badge badge-neutral">
                 {getSaleTypeIcon(order.saleType || SaleType.ON_SITE)}
                 <span>{order.saleType || SaleType.ON_SITE}</span>
               </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold border ${getStatusBadge(order.status)}`}>
+              <span className={`badge ${getStatusBadge(order.status)}`}>
                 {order.status}
               </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold border ${getPaymentStatusBadge(order.paymentStatus)}`}>
+              <span className={`badge ${getPaymentStatusBadge(order.paymentStatus)}`}>
                 {order.paymentStatus || PaymentStatus.UNPAID}
               </span>
             </div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
               {order.customerName}
             </h1>
           </div>
@@ -221,7 +221,7 @@ ${itemsText}`;
                 posAudio.playSuccessChime();
                 onUpdateStatus(order.id, OrderStatus.SOLD);
               }}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
+              className="px-4 py-2.5 bg-success hover:bg-success/90 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Հաստատել POS Վաճառքը</span>
@@ -230,7 +230,7 @@ ${itemsText}`;
 
           <button
             onClick={() => onEdit(order)}
-            className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
+            className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-primary-ink border border-indigo-200/80 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Խմբագրել</span>
@@ -238,7 +238,7 @@ ${itemsText}`;
 
           <button
             onClick={onOpenReportsPage}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 bg-ink-inverse hover:bg-ink-inverse/85 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
             title="Բացել Փաստաթղթերի և PDF Արտահանման Էջը"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
@@ -252,7 +252,7 @@ ${itemsText}`;
           >
             {copiedField === 'all' ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <Check className="w-3.5 h-3.5 text-emerald-700" />
                 <span className="text-emerald-700">Պատճենվեց</span>
               </>
             ) : (
@@ -276,18 +276,18 @@ ${itemsText}`;
       {/* Delete Confirmation Modal Overlay */}
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white p-6 rounded-3xl border border-slate-200 max-w-sm w-full shadow-2xl space-y-4"
+              className="bg-surface p-6 rounded-2xl border border-slate-200/80 max-w-sm w-full shadow-2xl space-y-4"
             >
               <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="text-center">
-                <h3 className="text-base font-black text-slate-900">Ջնջե՞լ այս պատվերը</h3>
+                <h3 className="text-base font-bold text-slate-900">Ջնջե՞լ այս պատվերը</h3>
                 <p className="text-xs text-slate-500 mt-1">Այս գործողությունը անվերադարձ է:</p>
               </div>
               <div className="grid grid-cols-2 gap-2.5 pt-2">
@@ -303,7 +303,7 @@ ${itemsText}`;
                     setShowDeleteConfirm(false);
                     onBack();
                   }}
-                  className="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                  className="py-2.5 bg-danger hover:bg-danger text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
                 >
                   Այո, Ջնջել
                 </button>
@@ -314,12 +314,12 @@ ${itemsText}`;
       </AnimatePresence>
 
       {/* Interactive Status Progression Stepper */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
+      <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-black uppercase tracking-wider text-slate-500 text-[10px]">
+          <span className="font-semibold uppercase tracking-wide text-slate-500 text-2xs">
             Կարգավիճակի Փոխում (Սեղմեք ցանկացած փուլի վրա)՝
           </span>
-          <span className="text-[11px] font-bold text-indigo-600 font-mono">
+          <span className="text-xs font-bold text-primary-ink font-mono">
             {order.status}
           </span>
         </div>
@@ -344,23 +344,23 @@ ${itemsText}`;
                 }}
                 className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between gap-1.5 active:scale-95 cursor-pointer ${
                   isActive
-                    ? 'border-indigo-600 bg-indigo-50/70 shadow-2xs ring-2 ring-indigo-200'
+                    ? 'border-indigo-600 bg-indigo-50/70 shadow-2xs ring-2 ring-primary-ink/25'
                     : isPast
                     ? 'border-slate-200 bg-slate-50/80 hover:bg-slate-100'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 opacity-60 hover:opacity-100'
+                    : 'border-slate-200 bg-surface hover:bg-slate-50 opacity-60 hover:opacity-100'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-indigo-700' : isPast ? 'text-emerald-700' : 'text-slate-400'}`}>
+                  <span className={`text-2xs font-bold uppercase tracking-wider ${isActive ? 'text-primary-ink' : isPast ? 'text-emerald-700' : 'text-slate-500'}`}>
                     Փուլ {idx + 1}
                   </span>
                   {isActive ? (
-                    <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   ) : isPast ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                   ) : null}
                 </div>
-                <p className={`text-xs font-extrabold ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>
+                <p className={`text-xs font-bold ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>
                   {step.label}
                 </p>
               </button>
@@ -373,11 +373,11 @@ ${itemsText}`;
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Products List & Summary (2 Cols) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                <Package className="w-4 h-4 text-primary-ink" />
+                <h2 className="section-title">
                   Պատվիրված Ապրանքներ (POS SKU)
                 </h2>
               </div>
@@ -386,12 +386,12 @@ ${itemsText}`;
                 <button
                   type="button"
                   onClick={handleCopyAllSKUs}
-                  className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-primary-ink border border-slate-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                   title="Պատճենել բոլոր SKU կոդերը POS-ի համար"
                 >
                   {copiedField === 'all-skus' ? (
                     <>
-                      <Check className="w-3 h-3 text-emerald-600" />
+                      <Check className="w-3 h-3 text-emerald-700" />
                       <span className="text-emerald-700">Պատճենվեց</span>
                     </>
                   ) : (
@@ -407,7 +407,7 @@ ${itemsText}`;
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/60">
+                  <tr className="border-b border-slate-200 text-2xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-50/60">
                     <th className="py-2.5 px-3 rounded-l-xl">Ապրանքի Կոդ</th>
                     <th className="py-2.5 px-3">Արտիկուլ (Artikul)</th>
                     <th className="py-2.5 px-3 text-center">Քանակ</th>
@@ -429,12 +429,12 @@ ${itemsText}`;
                           <button
                             type="button"
                             onClick={() => handleCopy(item.code || '', `sku-${idx}`)}
-                            className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200/70 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                            className="font-mono text-xs font-bold text-primary-ink bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200/70 inline-flex items-center gap-1.5 transition-all cursor-pointer"
                             title="Սեղմեք պատճենելու համար"
                           >
                             <span>{item.code || '---'}</span>
                             {copiedField === `sku-${idx}` ? (
-                              <Check className="w-3 h-3 text-emerald-600" />
+                              <Check className="w-3 h-3 text-emerald-700" />
                             ) : (
                               <Copy className="w-3 h-3 text-indigo-400" />
                             )}
@@ -446,7 +446,7 @@ ${itemsText}`;
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                          <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
                             {item.quantity}
                           </span>
                         </td>
@@ -455,17 +455,17 @@ ${itemsText}`;
                         </td>
                         <td className="py-3 px-3 text-right">
                           {hasDiscount ? (
-                            <span className="inline-flex items-center gap-0.5 text-[10.5px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                            <span className="inline-flex items-center gap-0.5 text-2xs font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
                               -{itemDiscount.toLocaleString()} ֏
                               {item.discountType === 'PERCENT' && ` (${item.discount}%)`}
                             </span>
                           ) : (
-                            <span className="text-slate-300 text-xs font-mono">-</span>
+                            <span className="text-slate-500 text-xs font-mono">-</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono text-xs font-black text-slate-900">
+                        <td className="py-3 px-3 text-right font-mono text-xs font-bold text-slate-900">
                           {hasDiscount && (
-                            <span className="text-[10px] text-slate-400 line-through block font-normal">
+                            <span className="text-2xs text-slate-500 line-through block font-normal">
                               {lineSubtotal.toLocaleString()} ֏
                             </span>
                           )}
@@ -500,7 +500,7 @@ ${itemsText}`;
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                           Վճարման Պայման՝
                         </span>
-                        <span className="text-xs font-black text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                        <span className="text-xs font-bold text-slate-800 bg-surface px-2.5 py-1 rounded-lg border border-slate-200">
                           {order.paymentTerms || PaymentTerms.FULL}
                         </span>
                       </div>
@@ -508,12 +508,12 @@ ${itemsText}`;
                       {/* Discount Badges */}
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {itemsDiscount > 0 && (
-                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-xs">
                             Ապրանքների զեղչ՝ -{itemsDiscount.toLocaleString()} ֏
                           </span>
                         )}
                         {orderDiscountAmount > 0 && (
-                          <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[11px]">
+                          <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-xs">
                             Պատվերի զեղչ՝ -{orderDiscountAmount.toLocaleString()} ֏ ({order.discountType === 'PERCENT' ? `${order.discount}%` : `${order.discount} ֏`})
                           </span>
                         )}
@@ -522,11 +522,11 @@ ${itemsText}`;
 
                     <div className="text-right">
                       {totalDiscount > 0 && (
-                        <div className="text-[11px] text-slate-400 font-mono mb-0.5">
+                        <div className="text-xs text-slate-500 font-mono mb-0.5">
                           Սկզբնական՝ <span className="line-through">{grossSubtotal.toLocaleString()} ֏</span>
                         </div>
                       )}
-                      <span className="text-2xl font-black text-slate-900 font-mono">
+                      <span className="text-2xl font-bold text-slate-900 font-mono">
                         {(order.totalAmount || 0).toLocaleString()} <span className="text-sm font-normal text-slate-500">֏</span>
                       </span>
                     </div>
@@ -537,10 +537,10 @@ ${itemsText}`;
           </div>
 
           {/* Cashier Note & POS Info Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
+          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <Receipt className="w-4 h-4 text-emerald-600" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              <Receipt className="w-4 h-4 text-emerald-700" />
+              <h3 className="section-title">
                 Դրամարկղի և POS Նշումներ
               </h3>
             </div>
@@ -549,10 +549,10 @@ ${itemsText}`;
             </p>
             {order.notes && (
               <div>
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Ընդհանուր նշումներ՝
                 </span>
-                <p className="text-xs text-slate-600 bg-slate-50/50 p-3 rounded-xl border border-slate-150">
+                <p className="text-xs text-slate-600 bg-slate-50/50 p-3 rounded-xl border border-slate-200">
                   {order.notes}
                 </p>
               </div>
@@ -563,15 +563,15 @@ ${itemsText}`;
         {/* Right Column: Dedicated Cashier Payment Center & Customer Details */}
         <div className="space-y-6">
           {/* Cashier Payment Center (վճարման եղանակ և կարգավիճակի փոփոխում կասիրի կողմից) */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                <Receipt className="w-4 h-4 text-emerald-700" />
+                <h3 className="section-title">
                   Վճարում և Դրամարկղ
                 </h3>
               </div>
-              <span className={`text-[10.5px] font-black px-2.5 py-0.5 rounded-full border ${getPaymentStatusBadge(order.paymentStatus)}`}>
+              <span className={`text-2xs font-bold px-2.5 py-0.5 rounded-full border ${getPaymentStatusBadge(order.paymentStatus)}`}>
                 {order.paymentStatus || PaymentStatus.UNPAID}
               </span>
             </div>
@@ -579,11 +579,11 @@ ${itemsText}`;
             {/* Payment Method & Terms Grid */}
             <div className="space-y-3 text-xs">
               <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Վճարման Եղանակ
                 </span>
-                <div className="flex items-center gap-2.5 text-slate-900 font-extrabold text-sm">
-                  <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-2.5 text-slate-900 font-bold text-sm">
+                  <div className="p-2 bg-surface rounded-xl border border-slate-200 shadow-2xs">
                     {getPaymentMethodIcon(order.paymentMethod)}
                   </div>
                   <span>{order.paymentMethod || PaymentMethod.CASH}</span>
@@ -593,10 +593,10 @@ ${itemsText}`;
               {/* Payment Terms: Full vs Prepayment details */}
               <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
                     Վճարման Տեսակ
                   </span>
-                  <span className="text-[11px] font-extrabold text-slate-800 font-mono">
+                  <span className="text-xs font-bold text-slate-800 font-mono">
                     {order.paymentTerms || PaymentTerms.FULL}
                   </span>
                 </div>
@@ -605,19 +605,19 @@ ${itemsText}`;
                   <div className="space-y-1.5 pt-1.5 border-t border-slate-200/60">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-amber-800 font-bold">Մասնակի վճարում՝</span>
-                      <span className="font-mono font-black text-amber-950 bg-amber-100/70 px-2 py-0.5 rounded-lg border border-amber-200">
+                      <span className="font-mono font-bold text-amber-950 bg-amber-100/70 px-2 py-0.5 rounded-lg border border-amber-200">
                         {(order.prepaymentAmount || 0).toLocaleString()} ֏
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-600 font-bold">Մնացորդ գումար՝</span>
-                      <span className="font-mono font-black text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
+                      <span className="font-mono font-bold text-slate-900 bg-surface px-2 py-0.5 rounded-lg border border-slate-200">
                         {(order.remainingBalance || (order.totalAmount - (order.prepaymentAmount || 0))).toLocaleString()} ֏
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-[11px] text-slate-500 font-medium pt-1">
+                  <div className="text-xs text-slate-500 font-medium pt-1">
                     Վճարվում է ամբողջ գումարը (100%)
                   </div>
                 )}
@@ -625,7 +625,7 @@ ${itemsText}`;
 
               {/* Interactive Cashier Status Buttons */}
               <div className="pt-2 space-y-2">
-                <label className="text-[10.5px] font-black uppercase tracking-wider text-slate-600 block">
+                <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block">
                   Դրամարկղի Գործողություն (Վճարումը ստանալուց հետո)՝
                 </label>
                 
@@ -633,9 +633,9 @@ ${itemsText}`;
                   <button
                     type="button"
                     onClick={() => handleCashierPaymentUpdate(PaymentStatus.PAID)}
-                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
                       order.paymentStatus === PaymentStatus.PAID
-                        ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
+                        ? 'bg-success text-white ring-2 ring-white/50'
                         : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
                     }`}
                   >
@@ -649,11 +649,11 @@ ${itemsText}`;
                       onClick={() => handleCashierPaymentUpdate(PaymentStatus.PARTIAL)}
                       className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                         order.paymentStatus === PaymentStatus.PARTIAL
-                          ? 'bg-amber-600 text-white ring-2 ring-amber-300'
+                          ? 'bg-warning text-white ring-2 ring-white/50'
                           : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
                       }`}
                     >
-                      <span>🟡 Մասնակի վճարված</span>
+                      <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>Մասնակի վճարված</span>
                     </button>
 
                     <button
@@ -661,7 +661,7 @@ ${itemsText}`;
                       onClick={() => handleCashierPaymentUpdate(PaymentStatus.UNPAID)}
                       className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                         order.paymentStatus === PaymentStatus.UNPAID
-                          ? 'bg-slate-800 text-white ring-2 ring-slate-400'
+                          ? 'bg-ink-inverse text-white ring-2 ring-white/40'
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                       }`}
                     >
@@ -674,36 +674,36 @@ ${itemsText}`;
           </div>
 
           {/* Customer & Location Details */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <User className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+              <User className="w-4 h-4 text-primary-ink" />
+              <h3 className="section-title">
                 Հաճախորդ և Առաքում
               </h3>
             </div>
 
             <div className="space-y-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Անուն Ազգանուն
                 </span>
-                <p className="font-extrabold text-sm text-slate-900">
+                <p className="font-bold text-sm text-slate-900">
                   {order.customerName}
                 </p>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Հեռախոսահամար(ներ)
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-black text-slate-800 text-xs">
+                  <span className="font-mono font-bold text-slate-800 text-xs">
                     {order.phoneNumber || '---'}
                   </span>
                   {order.phoneNumber && (
                     <a
                       href={`tel:${order.phoneNumber.replace(/\D/g, '')}`}
-                      className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                      className="px-2.5 py-1 bg-primary hover:bg-primary-strong text-white rounded-lg text-2xs font-bold flex items-center gap-1 transition-all cursor-pointer"
                     >
                       <Phone className="w-3 h-3" />
                       <span>Զանգել</span>
@@ -714,17 +714,17 @@ ${itemsText}`;
                 {/* Additional Phone Numbers list */}
                 {order.additionalPhoneNumbers && order.additionalPhoneNumbers.length > 0 && (
                   <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
-                    <span className="text-[9.5px] font-bold text-indigo-600 uppercase tracking-wider block">
+                    <span className="text-2xs font-bold text-primary-ink uppercase tracking-wider block">
                       Հավելյալ Համարներ՝
                     </span>
                     {order.additionalPhoneNumbers.map((addPhone, aIdx) => (
                       <div key={aIdx} className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-slate-700 text-[11px]">
+                        <span className="font-mono font-bold text-slate-700 text-xs">
                           {addPhone}
                         </span>
                         <a
                           href={`tel:${addPhone.replace(/\D/g, '')}`}
-                          className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-[9.5px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                          className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-primary-ink border border-indigo-200 rounded-md text-2xs font-bold flex items-center gap-1 transition-all cursor-pointer"
                         >
                           <Phone className="w-2.5 h-2.5" />
                           <span>Զանգել</span>
@@ -736,29 +736,29 @@ ${itemsText}`;
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Հասցե / Վայր
                 </span>
                 <p className="font-medium text-slate-800 flex items-start gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
                   <span>{order.address || '---'}</span>
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                     Ամսաթիվ
                   </span>
-                  <span className="font-mono text-[11px] font-bold text-slate-800">
+                  <span className="font-mono text-xs font-bold text-slate-800">
                     {order.purchaseDate}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                     Սրահի Աշխատակից
                   </span>
-                  <span className="text-[11px] font-bold text-slate-800 truncate block">
+                  <span className="text-xs font-bold text-slate-800 truncate block">
                     {order.salesRep || '---'}
                   </span>
                 </div>
@@ -767,18 +767,18 @@ ${itemsText}`;
           </div>
 
           {/* PDF & Reports Callout Card */}
-          <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-md space-y-3">
+          <div className="bg-ink-inverse text-white p-6 rounded-xl shadow-md space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-emerald-400" />
-              <h4 className="text-xs font-black uppercase tracking-wider">PDF Փաստաթղթեր և Արտահանում</h4>
+              <h4 className="section-title text-white">PDF Փաստաթղթեր և Արտահանում</h4>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed font-medium">
+            <p className="text-xs text-white/75 leading-relaxed font-medium">
               Ձևավորեք Առաքման Թերթիկ, Մոտեցնել Խանութի Թերթիկ կամ Մատակարարման Ապրանքացանկ, ներբեռնեք PDF կամ ուղարկեք էլ․ փոստով։
             </p>
             <button
               type="button"
               onClick={onOpenReportsPage}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              className="w-full py-2.5 bg-success hover:bg-success text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
             >
               <FileText className="w-4 h-4 text-white" />
               <span>Բացել PDF Հաշվետվությունների Էջը</span>

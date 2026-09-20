@@ -14,7 +14,9 @@ import {
   Clock,
   Sparkles,
   HardDrive,
-  Keyboard
+  Keyboard,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export type View = 'dashboard' | 'orders' | 'create-order' | 'view-order' | 'edit-order' | 'json-database' | 'reports';
@@ -30,6 +32,8 @@ interface SidebarProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   currentTime: Date;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
   onOpenShortcuts?: () => void;
 }
 
@@ -44,6 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
   currentTime,
+  theme,
+  onToggleTheme,
   onOpenShortcuts,
 }) => {
   const isOrdersActive = activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order';
@@ -56,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Layers,
       count: ordersCount,
       isActive: isOrdersActive,
-      badgeColor: 'bg-indigo-100 text-indigo-800'
+      badgeColor: 'bg-indigo-100 text-primary-ink'
     },
     {
       id: 'dashboard' as View,
@@ -72,7 +78,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       shortLabel: 'PDF',
       icon: FileText,
       isActive: activeView === 'reports',
-      badge: '5 Ձև',
       badgeColor: 'bg-emerald-100 text-emerald-800'
     },
     {
@@ -88,30 +93,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside 
-      className={`hidden lg:flex flex-col bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out select-none z-30 shrink-0 ${
+      aria-label="Հիմնական նավիգացիա"
+      className={`hidden lg:flex flex-col bg-surface/90 backdrop-blur-md border-r border-slate-200/80 transition-all duration-300 ease-in-out select-none z-30 shrink-0 ${
         isCollapsed ? 'w-[72px]' : 'w-[260px]'
       }`}
     >
       {/* Brand & Workspace Identity */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-150">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
         <div 
           onClick={() => setActiveView('orders')}
-          className="flex items-center gap-3 cursor-pointer group min-w-0"
+          className="flex items-center gap-2.5 cursor-pointer group min-w-0"
           title="tab.am POS"
         >
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-200/80 shrink-0 transition-transform group-hover:scale-105">
-            <Layers className="w-5 h-5 stroke-[2.2]" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center text-white shadow-[0_2px_6px_-1px_rgb(var(--shadow-rgb)/0.20),inset_0_1px_0_var(--fill-highlight)] shrink-0 transition-transform duration-200 group-hover:scale-[1.04]" aria-hidden="true">
+            <Layers className="w-[18px] h-[18px] stroke-[2.2]" />
           </div>
           
           {!isCollapsed && (
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-slate-900 text-base tracking-tight leading-none">tab.am</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="font-bold text-slate-900 text-[13px] tracking-tight leading-none">tab.am</span>
+                <span className="px-1 py-px rounded text-2xs font-semibold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/70">
                   POS
                 </span>
               </div>
-              <p className="text-[10.5px] font-medium text-slate-400 mt-0.5 truncate">Առցանց Դրամարկղ</p>
+              <p className="text-2xs font-medium text-slate-400 mt-1 truncate">Առցանց Դրամարկղ</p>
             </div>
           )}
         </div>
@@ -120,10 +126,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
-          title={isCollapsed ? "Բացել կողային վահանակը" : "Ծալել կողային վահանակը"}
+          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all duration-150 cursor-pointer"
+          aria-label={isCollapsed ? 'Բացել կողային վահանակը' : 'Ծալել կողային վահանակը'}
+          aria-expanded={!isCollapsed}
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? <ChevronRight className="w-4 h-4" aria-hidden="true" /> : <ChevronLeft className="w-4 h-4" aria-hidden="true" />}
         </button>
       </div>
 
@@ -132,20 +139,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={() => setActiveView('create-order')}
-          className={`w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl font-black text-xs transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] ${
-            activeView === 'create-order'
-              ? 'bg-slate-900 text-white ring-2 ring-indigo-500/50'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-          } ${isCollapsed ? 'px-0' : 'px-4'}`}
+          aria-label="Գրանցել նոր պատվեր"
+          aria-current={activeView === 'create-order' ? 'page' : undefined}
           title="Գրանցել նոր պատվեր (Կոճակ՝ N)"
+          className={`w-full flex items-center justify-center gap-2.5 py-2 rounded-lg font-semibold text-xs transition-all duration-150 cursor-pointer active:scale-[0.98] shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.10),inset_0_1px_0_var(--fill-highlight)] ${
+            activeView === 'create-order'
+              ? 'bg-ink-inverse text-white ring-2 ring-primary/30'
+              : 'bg-primary hover:bg-primary-strong text-white'
+          } ${isCollapsed ? 'px-0' : 'px-3.5'}`}
         >
-          <div className="p-1 bg-white/20 rounded-lg">
-            <Plus className="w-4 h-4 stroke-[3]" />
+          <div className="p-1 bg-white/15 rounded-md" aria-hidden="true">
+            <Plus className="w-4 h-4 stroke-[2.5]" />
           </div>
           {!isCollapsed && (
             <div className="flex items-center justify-between flex-1">
               <span>Նոր Պատվեր</span>
-              <kbd className="text-[9.5px] font-mono px-1.5 py-0.5 bg-white/20 text-white rounded font-bold">N</kbd>
+              <kbd className="text-2xs font-mono px-1.5 py-0.5 bg-white/15 text-white/90 rounded-md font-semibold border border-white/10">N</kbd>
             </div>
           )}
         </button>
@@ -156,12 +165,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Main Section */}
         <div>
           {!isCollapsed && (
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 mb-2">
+            <p className="text-2xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1.5">
               Հիմնական
             </p>
           )}
 
-          <nav className="space-y-1">
+          <nav className="space-y-px">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -169,32 +178,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveView(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all duration-150 cursor-pointer text-left relative group ${
+                  aria-current={item.isActive ? 'page' : undefined}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer text-left relative group ${
                     item.isActive
-                      ? 'bg-indigo-50/90 text-indigo-900 font-black shadow-2xs border border-indigo-150/70'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent'
+                      ? 'bg-slate-100/90 text-slate-900 font-semibold shadow-[inset_2px_0_0_var(--color-primary)]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
                   } ${isCollapsed ? 'justify-center px-0' : ''}`}
                   title={item.label}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                    item.isActive ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
-                  }`} />
+                  <Icon className={`w-[17px] h-[17px] shrink-0 transition-colors duration-150 ${
+                    item.isActive ? 'text-primary-ink' : 'text-slate-400 group-hover:text-slate-600'
+                  }`} aria-hidden="true" />
 
                   {!isCollapsed && (
                     <span className="flex-1 truncate">{item.label}</span>
                   )}
 
                   {!isCollapsed && item.count !== undefined && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
-                      item.isActive ? 'bg-indigo-600 text-white' : 'bg-slate-200/80 text-slate-700'
+                    <span className={`px-1.5 py-0.5 rounded-md text-2xs font-mono font-semibold tabular-nums ${
+                      item.isActive ? 'bg-primary text-white' : 'bg-slate-200/70 text-slate-500'
                     }`}>
                       {item.count}
-                    </span>
-                  )}
-
-                  {!isCollapsed && item.badge && (
-                    <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-100 text-emerald-800">
-                      {item.badge}
                     </span>
                   )}
 
@@ -204,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   {/* Collapsed Tooltip Preview */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-bold rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
+                    <div role="tooltip" className="absolute left-full ml-2 px-2 py-1 bg-ink-inverse text-white text-xs font-medium rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-50 whitespace-nowrap">
                       {item.label} {item.count !== undefined && `(${item.count})`}
                     </div>
                   )}
@@ -217,26 +221,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Quick Tools Section */}
         <div>
           {!isCollapsed && (
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 mb-2">
+            <p className="text-2xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1.5">
               Գործիքներ
             </p>
           )}
 
-          <div className="space-y-1">
+          <div className="space-y-px">
             {/* Barcode Scanner Tool */}
             <button
               type="button"
               onClick={onOpenScanner}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all cursor-pointer text-left group ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-primary-ink hover:bg-indigo-50/60 transition-all duration-150 cursor-pointer text-left group ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Շտրիխ-կոդի / SKU Սկաներ (Ստեղն՝ S)"
             >
-              <ScanLine className="w-4 h-4 text-indigo-600 shrink-0 group-hover:scale-110 transition-transform" />
+              <ScanLine className="w-4 h-4 text-slate-400 group-hover:text-primary-ink shrink-0 transition-colors" />
               {!isCollapsed && (
                 <div className="flex items-center justify-between flex-1">
                   <span>Շտրիխ-Կոդի Սկաներ</span>
-                  <kbd className="text-[9px] font-mono px-1 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">S</kbd>
+                  <kbd className="text-2xs font-mono px-1 py-0.5 bg-slate-100 text-slate-400 rounded border border-slate-200/80">S</kbd>
                 </div>
               )}
             </button>
@@ -245,16 +249,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={onExportJson}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all cursor-pointer text-left group ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/60 transition-all duration-150 cursor-pointer text-left group ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Արտահանել JSON Backup ֆայլ"
             >
-              <Download className="w-4 h-4 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" />
+              <Download className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0 transition-colors" />
               {!isCollapsed && (
                 <div className="flex items-center justify-between flex-1">
                   <span>Արտահանել JSON</span>
-                  <span className="text-[9px] font-mono text-emerald-600 font-bold">Backup</span>
+                  <span className="text-2xs font-mono text-emerald-600 font-medium">Backup</span>
                 </div>
               )}
             </button>
@@ -263,21 +267,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={toggleSoundMute}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-left group ${
-                isSoundMuted ? 'text-slate-400 hover:bg-slate-100' : 'text-slate-700 hover:bg-indigo-50/50 text-indigo-900'
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer text-left group ${
+                isSoundMuted ? 'text-slate-500 hover:bg-slate-100/80' : 'text-slate-700 hover:bg-indigo-50/60'
               } ${isCollapsed ? 'justify-center px-0' : ''}`}
+              aria-label={isSoundMuted ? 'Միացնել ձայները' : 'Անջատել ձայները'}
+              aria-pressed={isSoundMuted}
               title={isSoundMuted ? "Միացնել ձայները" : "Անջատել ձայները"}
             >
               {isSoundMuted ? (
-                <VolumeX className="w-4 h-4 text-slate-400 shrink-0" />
+                <VolumeX className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
               ) : (
-                <Volume2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                <Volume2 className="w-4 h-4 text-primary-ink shrink-0" aria-hidden="true" />
               )}
               {!isCollapsed && (
                 <div className="flex items-center justify-between flex-1">
                   <span>Ձայնային Էֆեկտներ</span>
-                  <span className={`text-[9.5px] font-bold ${isSoundMuted ? 'text-slate-400' : 'text-indigo-600'}`}>
+                  <span className={`text-2xs font-medium ${isSoundMuted ? 'text-slate-400' : 'text-primary-ink'}`}>
                     {isSoundMuted ? 'Անջատված' : 'Միացված'}
+                  </span>
+                </div>
+              )}
+            </button>
+
+            {/* Light / Dark Theme Toggle */}
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              aria-label={theme === 'dark' ? 'Միացնել լուսավոր ռեժիմը' : 'Միացնել մուգ ռեժիմը'}
+              aria-pressed={theme === 'dark'}
+              title={theme === 'dark' ? 'Լուսավոր ռեժիմ' : 'Մուգ ռեժիմ'}
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer text-left group ${
+                isCollapsed ? 'justify-center px-0' : ''
+              } ${
+                theme === 'dark' ? 'text-slate-700 bg-indigo-50/60 hover:bg-indigo-50' : 'text-slate-600 hover:bg-slate-100/80'
+              }`}
+            >
+              {theme === 'dark' ? (
+                <Moon className="w-4 h-4 text-primary-ink shrink-0" aria-hidden="true" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />
+              )}
+              {!isCollapsed && (
+                <div className="flex items-center justify-between flex-1">
+                  <span>Ինտերֆեյսի Գույնը</span>
+                  <span className={`text-2xs font-medium ${theme === 'dark' ? 'text-primary-ink' : 'text-slate-400'}`}>
+                    {theme === 'dark' ? 'Մուգ' : 'Բաց'}
                   </span>
                 </div>
               )}
@@ -288,16 +322,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onOpenShortcuts}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all cursor-pointer text-left group ${
+                className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-primary-ink hover:bg-indigo-50/60 transition-all duration-150 cursor-pointer text-left group ${
                   isCollapsed ? 'justify-center px-0' : ''
                 }`}
                 title="Ստեղնաշարի Կոճակներ (Ստեղն՝ ?)"
               >
-                <Keyboard className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 shrink-0 transition-transform group-hover:scale-110" />
+                <Keyboard className="w-4 h-4 text-slate-400 group-hover:text-primary-ink shrink-0 transition-colors" />
                 {!isCollapsed && (
                   <div className="flex items-center justify-between flex-1">
                     <span>Կարճուղիներ</span>
-                    <kbd className="text-[9px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">?</kbd>
+                    <kbd className="text-2xs font-mono px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded border border-slate-200/80">?</kbd>
                   </div>
                 )}
               </button>
@@ -307,24 +341,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Sidebar Footer: System Status & Time */}
-      <div className="p-3 border-t border-slate-150 bg-slate-50/60">
+      <div className="p-3 border-t border-slate-100/80">
         {!isCollapsed ? (
           <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
+            <div className="flex items-center justify-between px-1.5">
               <div className="flex items-center gap-1.5">
-                <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-[10.5px] font-black text-slate-700">Տեղային Բազա</span>
+                <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-2xs font-semibold text-slate-600">Տեղային Բազա</span>
               </div>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-emerald-700 bg-emerald-50/80 border border-emerald-200/60 px-1.5 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Անցանց (Offline)
+                Offline
               </span>
             </div>
 
-            <div className="flex items-center justify-between px-1 text-[10px] text-slate-400 font-mono">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between px-1.5 text-2xs text-slate-400 font-mono">
+              <div className="flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-slate-400" />
-                <span>
+                <span className="font-semibold text-slate-600 tabular-nums">
                   {currentTime.toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
@@ -334,9 +368,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1" title="Տեղային Բազա • Offline Ready">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-mono font-bold text-slate-500">
+          <div className="flex flex-col items-center gap-1.5" title="Տեղային Բազա • Offline Ready">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-2xs font-mono font-medium text-slate-400 tabular-nums">
               {currentTime.toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>

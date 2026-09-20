@@ -14,7 +14,9 @@ import {
   Trash2, 
   X as CloseIcon,
   ChevronRight,
-  HardDrive
+  HardDrive,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { View } from './Sidebar';
 
@@ -32,6 +34,8 @@ interface MobileNavProps {
   onOpenNotifications: () => void;
   onClearAllOrders: () => void;
   currentTime: Date;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -48,6 +52,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenNotifications,
   onClearAllOrders,
   currentTime,
+  theme,
+  onToggleTheme,
 }) => {
   const isOrdersActive = activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order';
 
@@ -55,28 +61,29 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     <>
       {/* 1. Sleek Mobile Bottom Dock (Always visible on mobile/tablet) */}
       <nav 
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around select-none"
-        aria-label="Mobile Navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/[0.97] backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-2px_20px_rgb(var(--shadow-rgb)/0.06)] px-2 pt-1.5 pb-safe flex items-center justify-around select-none"
+        aria-label="Ստորին նավիգացիա"
       >
         {/* Orders */}
         <button
           type="button"
           onClick={() => setActiveView('orders')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
-            isOrdersActive ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium'
+          aria-current={isOrdersActive ? 'page' : undefined}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+            isOrdersActive ? 'text-primary-ink font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
           <div className="relative">
-            <Layers className="w-5 h-5" />
+            <Layers className="w-5 h-5" aria-hidden="true" />
             {ordersCount > 0 && (
-              <span className="absolute -top-1 -right-2.5 px-1 py-0.2 bg-indigo-600 text-white rounded-full text-[8px] font-mono font-black">
+              <span className="absolute -top-1 -right-2.5 px-1 py-0.5 bg-primary text-white rounded-full text-2xs font-mono font-bold" aria-hidden="true">
                 {ordersCount}
               </span>
             )}
           </div>
-          <span className="text-[10px]">Պատվերներ</span>
+          <span className="text-2xs">Պատվերներ</span>
           {isOrdersActive && (
-            <span className="w-1 h-1 rounded-full bg-indigo-600 absolute bottom-0.5" />
+            <span className="w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all" aria-hidden="true" />
           )}
         </button>
 
@@ -84,45 +91,47 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         <button
           type="button"
           onClick={() => setActiveView('dashboard')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
-            activeView === 'dashboard' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium'
+          aria-current={activeView === 'dashboard' ? 'page' : undefined}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+            activeView === 'dashboard' ? 'text-primary-ink font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px]">Վիճակ</span>
+          <LayoutDashboard className="w-5 h-5" aria-hidden="true" />
+          <span className="text-2xs">Վիճակ</span>
           {activeView === 'dashboard' && (
-            <span className="w-1 h-1 rounded-full bg-indigo-600 absolute bottom-0.5" />
+            <span className="w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all" aria-hidden="true" />
           )}
         </button>
 
-        {/* Center: "+ Գրանցել" Elevated Action */}
+        {/* Center: "Գրանցել" Elevated Action */}
         <button
           type="button"
           onClick={() => setActiveView('create-order')}
-          className="flex flex-col items-center justify-center -mt-5 group cursor-pointer active:scale-90 transition-transform"
-          title="Գրանցել Նոր Պատվեր"
+          className="flex flex-col items-center justify-center -mt-5 group cursor-pointer active:scale-90 transition-transform duration-200"
+          aria-label="Գրանցել նոր պատվեր"
         >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-300 ring-4 ring-white">
-            <Plus className="w-6 h-6 stroke-[2.5]" />
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary via-primary to-accent text-white flex items-center justify-center shadow-md ring-4 ring-surface">
+            <Plus className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
           </div>
-          <span className="text-[10px] font-black text-indigo-700 mt-0.5">Գրանցել</span>
+          <span className="text-2xs font-semibold text-primary-ink mt-0.5">Գրանցել</span>
         </button>
 
         {/* JSON Database */}
         <button
           type="button"
           onClick={() => setActiveView('json-database')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
-            activeView === 'json-database' ? 'text-amber-600 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium'
+          aria-current={activeView === 'json-database' ? 'page' : undefined}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+            activeView === 'json-database' ? 'text-amber-700 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
           <div className="relative">
-            <Database className="w-5 h-5" />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse absolute -top-0.5 -right-0.5" />
+            <Database className="w-5 h-5" aria-hidden="true" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse absolute -top-0.5 -right-0.5" aria-hidden="true" />
           </div>
-          <span className="text-[10px]">Բազա</span>
+          <span className="text-2xs">Բազա</span>
           {activeView === 'json-database' && (
-            <span className="w-1 h-1 rounded-full bg-amber-600 absolute bottom-0.5" />
+            <span className="w-4 h-[2px] rounded-full bg-amber-500 absolute bottom-0.5 transition-all" aria-hidden="true" />
           )}
         </button>
 
@@ -130,14 +139,15 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         <button
           type="button"
           onClick={() => setActiveView('reports')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
-            activeView === 'reports' ? 'text-emerald-600 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium'
+          aria-current={activeView === 'reports' ? 'page' : undefined}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+            activeView === 'reports' ? 'text-emerald-700 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
-          <FileText className="w-5 h-5" />
-          <span className="text-[10px]">Հաշվետվություն</span>
+          <FileText className="w-5 h-5" aria-hidden="true" />
+          <span className="text-2xs">Հաշվետվություն</span>
           {activeView === 'reports' && (
-            <span className="w-1 h-1 rounded-full bg-emerald-600 absolute bottom-0.5" />
+            <span className="w-4 h-[2px] rounded-full bg-emerald-500 absolute bottom-0.5 transition-all" aria-hidden="true" />
           )}
         </button>
       </nav>
@@ -145,14 +155,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({
       {/* 2. Slide-over Mobile Tools Drawer */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Կառավարման մենյուն">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             />
 
             {/* Drawer Sheet */}
@@ -160,26 +170,27 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-              className="absolute inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl flex flex-col z-10"
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="absolute inset-y-0 left-0 max-w-xs w-full bg-surface/98 backdrop-blur-xl shadow-[4px_0_40px_rgba(0,0,0,0.08)] flex flex-col z-10"
             >
               {/* Header */}
-              <div className="p-4 border-b border-slate-150 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-100/80 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-sm shadow-indigo-200/60">
                     <Layers className="w-4 h-4 stroke-[2.2]" />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-900 text-sm">tab.am POS</h3>
-                    <p className="text-[10px] text-slate-400 font-medium">Կառավարման Մենյու</p>
+                    <h3 className="font-bold text-slate-900 text-sm">tab.am POS</h3>
+                    <p className="text-2xs text-slate-500 font-medium">Կառավարման Մենյու</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
+                  aria-label="Փակել մենյուն"
+                  className="p-2 -mr-1 text-slate-500 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
                 >
-                  <CloseIcon className="w-5 h-5" />
+                  <CloseIcon className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
 
@@ -192,23 +203,23 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     setActiveView('create-order');
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between p-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs transition-all shadow-md shadow-indigo-100 active:scale-98 cursor-pointer"
+                  className="w-full flex items-center justify-between p-3.5 bg-primary hover:bg-primary-strong text-white rounded-xl font-semibold text-xs transition-all shadow-md active:scale-[0.98] cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-1.5 bg-white/20 rounded-xl">
                       <Plus className="w-4 h-4 stroke-[3]" />
                     </div>
                     <div className="text-left">
-                      <div>➕ Գրանցել Նոր Պատվեր</div>
-                      <div className="text-[10px] text-indigo-100 font-medium">POS դրամարկղ և առաքում</div>
+                      <div>Գրանցել Նոր Պատվեր</div>
+                      <div className="text-2xs text-white/80 font-medium">POS դրամարկղ և առաքում</div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-indigo-200" />
+                  <ChevronRight className="w-4 h-4 text-white/70" />
                 </button>
 
                 {/* Navigation Links */}
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2 mb-1.5">
+                  <p className="text-2xs font-semibold text-slate-500 uppercase tracking-wide px-2 mb-1.5">
                     Բաժիններ
                   </p>
 
@@ -223,10 +234,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Layers className="w-4 h-4 text-indigo-600" />
-                      <span>📦 Պատվերների Ցանկ</span>
+                      <Layers className="w-4 h-4 text-primary-ink" />
+                      <span>Պատվերների Ցանկ</span>
                     </div>
-                    <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-[10px] font-mono font-black">
+                    <span className="px-2 py-0.5 bg-surface border border-slate-200 text-slate-700 rounded-lg text-2xs font-mono font-bold">
                       {ordersCount}
                     </span>
                   </button>
@@ -242,10 +253,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <LayoutDashboard className="w-4 h-4 text-indigo-600" />
-                      <span>📊 Վիճակագրություն & Վաճառք</span>
+                      <LayoutDashboard className="w-4 h-4 text-primary-ink" />
+                      <span>Վիճակագրություն & Վաճառք</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <ChevronRight className="w-4 h-4 text-slate-500" />
                   </button>
 
                   <button
@@ -259,12 +270,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-emerald-600" />
-                      <span>📄 PDF Հաշվետվություններ</span>
+                      <FileText className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                      <span>PDF Հաշվետվություններ</span>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg">
-                      3 Ձև
-                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-500" aria-hidden="true" />
                   </button>
 
                   <button
@@ -278,18 +287,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Database className="w-4 h-4 text-amber-600" />
-                      <span>🗄️ JSON Բազա (Ֆայլ)</span>
+                      <Database className="w-4 h-4 text-amber-700" />
+                      <span>JSON Բազա (Ֆայլ)</span>
                     </div>
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">
+                    <span className="text-2xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">
                       Ֆայլային
                     </span>
                   </button>
                 </div>
 
                 {/* Tools */}
-                <div className="space-y-1 pt-2 border-t border-slate-150">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2 mb-1.5">
+                <div className="space-y-1 pt-2 border-t border-slate-200">
+                  <p className="text-2xs font-semibold text-slate-500 uppercase tracking-wide px-2 mb-1.5">
                     Գործիքներ
                   </p>
 
@@ -302,10 +311,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <ScanLine className="w-4 h-4 text-indigo-600" />
-                      <span>⚡ Շտրիխ-Կոդի Սկաներ</span>
+                      <ScanLine className="w-4 h-4 text-primary-ink" />
+                      <span>Շտրիխ-Կոդի Սկաներ</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400">Կամերա</span>
+                    <span className="text-2xs font-mono text-slate-500">Կամերա</span>
                   </button>
 
                   <button
@@ -317,10 +326,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <Download className="w-4 h-4 text-emerald-600" />
-                      <span>💾 Արտահանել JSON Backup</span>
+                      <Download className="w-4 h-4 text-emerald-700" />
+                      <span>Արտահանել JSON Backup</span>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-600 font-bold">.json</span>
+                    <span className="text-2xs font-mono text-emerald-700 font-bold">.json</span>
                   </button>
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
@@ -329,8 +338,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                       onClick={toggleSoundMute}
                       className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
                     >
-                      {isSoundMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-indigo-600" />}
-                      <span>{isSoundMuted ? 'Ձայնը ❌' : 'Ձայնը 🔊'}</span>
+                      {isSoundMuted ? <VolumeX className="w-4 h-4 text-slate-500" /> : <Volume2 className="w-4 h-4 text-primary-ink" />}
+                      <span>{isSoundMuted ? 'Ձայնը՝ անջատված' : 'Ձայնը'}</span>
                     </button>
 
                     <button
@@ -340,20 +349,37 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                         onOpenNotifications();
                       }}
                       className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                      aria-label={unreadCount > 0 ? `Բացել ծանուցումները (${unreadCount} նոր)` : 'Բացել ծանուցումները'}
                     >
-                      <Bell className="w-4 h-4 text-indigo-600" />
+                      <Bell className="w-4 h-4 text-primary-ink" aria-hidden="true" />
                       <span>Ծանուցում</span>
                       {unreadCount > 0 && (
-                        <span className="bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                        <span className="bg-primary text-white text-2xs font-bold px-1.5 py-0.5 rounded-full" aria-hidden="true">
                           {unreadCount}
                         </span>
                       )}
                     </button>
                   </div>
+
+                  {/* Interface theme */}
+                  <button
+                    type="button"
+                    onClick={onToggleTheme}
+                    aria-pressed={theme === 'dark'}
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      {theme === 'dark'
+                        ? <Moon className="w-4 h-4 text-primary-ink" aria-hidden="true" />
+                        : <Sun className="w-4 h-4 text-amber-700" aria-hidden="true" />}
+                      <span>Ինտերֆեյսի Գույնը</span>
+                    </div>
+                    <span className="text-2xs font-bold">{theme === 'dark' ? 'Մուգ' : 'Բաց'}</span>
+                  </button>
                 </div>
 
                 {/* Danger action: Clear orders */}
-                <div className="pt-2 border-t border-slate-150">
+                <div className="pt-2 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => {
@@ -362,16 +388,16 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }}
                     className="w-full flex items-center justify-center gap-2 p-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <Trash2 className="w-4 h-4 text-rose-600" aria-hidden="true" />
                     <span>Մաքրել Բոլոր Պատվերները</span>
                   </button>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-slate-150 bg-slate-50/70 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <div className="p-4 border-t border-slate-100/80 bg-gradient-to-t from-slate-50/80 to-transparent flex items-center justify-between text-xs text-slate-500 font-medium">
                 <div className="flex items-center gap-1.5">
-                  <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+                  <HardDrive className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
                   <span>100% Տեղային Բազա</span>
                 </div>
                 <span className="font-mono font-bold">

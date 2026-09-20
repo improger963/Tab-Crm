@@ -86,6 +86,25 @@ export default function App() {
   const [now, setNow] = useState(new Date());
   const currentTime = now;
 
+  // Design-system theme (light / dark) — presentation only, persisted locally.
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('tab_pos_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    // Keep the browser chrome (mobile URL bar, form controls) on the same page as the app shell.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b1120' : '#4f46e5');
+    localStorage.setItem('tab_pos_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    posAudio.playScanBeep();
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const currentOrder = useMemo(() => {
     if (!currentOrderId) return null;
     return orders.find(o => o.id === currentOrderId) || null;
@@ -106,7 +125,7 @@ export default function App() {
     return [
       {
         id: 'welcome-notification-1',
-        title: '🎉 Բարի գալուստ',
+        title: 'Բարի գալուստ',
         body: 'Ծանուցումների կենտրոնը պատրաստ է աշխատանքի:',
         type: 'success',
         timestamp: new Date().toISOString(),
@@ -130,9 +149,9 @@ export default function App() {
     setIsSoundMuted(nextMuted);
     if (!nextMuted) {
       posAudio.playScanBeep();
-      addToast('success', 'Ձայնային ազդանշանները միացված են 🔊');
+      addToast('success', 'Ձայնային ազդանշանները միացված են');
     } else {
-      addToast('save', 'Ձայնն անջատված է 🔇');
+      addToast('save', 'Ձայնն անջատված է');
     }
   };
 
@@ -366,7 +385,7 @@ export default function App() {
 
     // Trigger in-app notification
     triggerNotification(
-      '🆕 Նոր Պատվեր է Գրանցվել',
+      'Նոր Պատվեր է Գրանցվել',
       `Գրանցվեց նոր պատվեր՝ #${orderData.id}\nՀաճախորդ՝ ${orderData.customerName}\nՏեսակ՝ ${orderData.saleType}`,
       'success',
       orderData.id
@@ -457,7 +476,7 @@ export default function App() {
     if (newStatus === OrderStatus.DELIVERED) {
       if (isAlertEnabled) {
         triggerNotification(
-          '📦 ՊԱՏՎԵՐՆ ԱՎԱՐՏՎԵԼ Է',
+          'ՊԱՏՎԵՐՆ ԱՎԱՐՏՎԵԼ Է',
           `Պատվեր՝ #${currentOrder.id}\nՀաճախորդ՝ ${currentOrder.customerName || 'Անհայտ'}\nՀասցե՝ ${currentOrder.address || 'Չկա'}`,
           'success',
           currentOrder.id
@@ -474,7 +493,7 @@ export default function App() {
       }
       
       triggerNotification(
-        `🔄 Կարգավիճակը Փոխվել է`,
+        `Կարգավիճակը Փոխվել է`,
         `Պատվեր #${currentOrder.id}-ի կարգավիճակը դարձավ՝ «${ArmenianStatus}»\nՀաճախորդ՝ ${currentOrder.customerName}`,
         type,
         currentOrder.id
@@ -508,7 +527,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans antialiased">
+    <div className="flex h-screen overflow-hidden bg-[var(--app-bg)] text-slate-900 font-sans antialiased">
       {/* 1. Desktop Modern Sidebar */}
       <Sidebar
         activeView={activeView}
@@ -527,6 +546,8 @@ export default function App() {
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={handleToggleSidebar}
         currentTime={currentTime}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
       />
 
@@ -553,6 +574,8 @@ export default function App() {
           toggleSoundMute={toggleSoundMute}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           currentOrder={currentOrder}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         {/* Dynamic Notification Center Dropdown */}
@@ -585,7 +608,7 @@ export default function App() {
           onToggleAlert={() => setIsAlertEnabled(!isAlertEnabled)}
           onTestNotification={() => {
             triggerNotification(
-              '🔔 Ծանուցման Ստուգում',
+              'Ծանուցման Ստուգում',
               'Համակարգի ծանուցումները և ազդանշանը հաջողությամբ գործում են։',
               'success'
             );
@@ -593,15 +616,16 @@ export default function App() {
         />
 
         {/* Scrollable Main View Canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-24 lg:pb-8 bg-slate-50/60">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-8">
           <div className="max-w-[1700px] mx-auto">
             <AnimatePresence mode="wait">
               {activeView === 'orders' && (
                 <motion.div 
                   key="order-list"
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -10 }} 
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0 space-y-4"
                 >
                   <OrderFeed 
@@ -631,9 +655,10 @@ export default function App() {
               {activeView === 'create-order' && (
                 <motion.div
                   key="create-order"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0"
                 >
                   <CreateOrderPage 
@@ -646,9 +671,10 @@ export default function App() {
               {activeView === 'view-order' && (
                 <motion.div
                   key="view-order"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0"
                 >
                   {currentOrder ? (
@@ -665,11 +691,12 @@ export default function App() {
                       onDelete={handleDeleteOrder}
                     />
                   ) : (
-                    <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-4 max-w-md mx-auto my-12 shadow-sm">
+                    <div className="solid-card p-10 text-center space-y-4 max-w-md mx-auto my-12">
                       <p className="text-sm font-bold text-slate-700">Պատվերը չի գտնվել կամ հեռացվել է:</p>
                       <button
+                        type="button"
                         onClick={() => setActiveView('orders')}
-                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                        className="btn btn-md btn-primary"
                       >
                         Վերադառնալ Պատվերների Ցանկին
                       </button>
@@ -681,9 +708,10 @@ export default function App() {
               {activeView === 'edit-order' && (
                 <motion.div
                   key="edit-order"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0"
                 >
                   {currentOrder ? (
@@ -693,11 +721,12 @@ export default function App() {
                       onCancel={() => setActiveView('view-order')}
                     />
                   ) : (
-                    <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-4 max-w-md mx-auto my-12 shadow-sm">
+                    <div className="solid-card p-10 text-center space-y-4 max-w-md mx-auto my-12">
                       <p className="text-sm font-bold text-slate-700">Պատվերը չի գտնվել:</p>
                       <button
+                        type="button"
                         onClick={() => setActiveView('orders')}
-                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                        className="btn btn-md btn-primary"
                       >
                         Վերադառնալ Պատվերների Ցանկին
                       </button>
@@ -707,7 +736,12 @@ export default function App() {
               )}
 
               {activeView === 'dashboard' && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <motion.div 
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                >
                   <DeliveryDashboard orders={orders} />
                 </motion.div>
               )}
@@ -715,9 +749,10 @@ export default function App() {
               {activeView === 'json-database' && (
                 <motion.div 
                   key="json-database-page"
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -10 }} 
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0"
                 >
                   <JsonDatabasePage 
@@ -736,9 +771,10 @@ export default function App() {
               {activeView === 'reports' && (
                 <motion.div 
                   key="reports-page"
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -10 }} 
+                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="flex-1 min-h-0"
                 >
                   <ReportsPage 
@@ -772,6 +808,8 @@ export default function App() {
           onOpenNotifications={() => setIsNotificationsOpen(true)}
           onClearAllOrders={handleClearAllOrders}
           currentTime={currentTime}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       </div>
 
@@ -804,55 +842,59 @@ export default function App() {
             initial={{ opacity: 0, y: -80, scale: 0.9 }}
             animate={{ opacity: 1, y: 16, scale: 1 }}
             exit={{ opacity: 0, y: -40, scale: 0.93 }}
-            transition={{ type: "spring", damping: 18, stiffness: 220 }}
+            transition={{ type: "spring", damping: 20, stiffness: 260 }}
+            role="status"
+            aria-live="polite"
             className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-[380px] px-4"
           >
-            <div 
-              onClick={() => {
-                if (activeBannerNotification.orderId) {
-                  const ord = orders.find(o => o.id === activeBannerNotification.orderId);
-                  if (ord) {
-                    setCurrentOrderId(ord.id);
-                    setActiveView('view-order');
-                  }
-                }
-                setActiveBannerNotification(null);
-              }}
-              className="cursor-pointer bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_24px_50px_rgba(15,23,42,0.14)] rounded-[20px] p-4 flex gap-3 text-left hover:border-indigo-200 transition-all active:scale-[0.98] group"
-            >
-              <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                activeBannerNotification.type === 'success' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-100' : 
-                activeBannerNotification.type === 'warning' ? 'bg-rose-500 text-white shadow-md shadow-rose-100' : 
-                'bg-indigo-600 text-white shadow-md shadow-indigo-100'
-              }`}>
-                <Bell className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black text-slate-800 tracking-tight leading-none">
-                    {activeBannerNotification.title}
-                  </span>
-                  <span className="text-[8px] text-indigo-600 font-extrabold uppercase tracking-wider ml-1 bg-indigo-50 px-1.5 py-0.5 rounded-full">
-                    Հիմա
-                  </span>
-                </div>
-                <p className="text-[10.5px] text-slate-500 font-medium leading-normal mt-1.5 whitespace-pre-line">
-                  {activeBannerNotification.body}
-                </p>
-                {activeBannerNotification.orderId && (
-                  <span className="text-[8.5px] text-indigo-600 font-bold mt-2 flex items-center gap-1 group-hover:underline">
-                    Անցնել պատվերին <ChevronRight className="w-2.5 h-2.5" />
-                  </span>
-                )}
-              </div>
+            <div className="glass-card shadow-xl rounded-xl p-1.5 flex gap-1 text-left">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
+                type="button"
+                onClick={() => {
+                  if (activeBannerNotification.orderId) {
+                    const ord = orders.find(o => o.id === activeBannerNotification.orderId);
+                    if (ord) {
+                      setCurrentOrderId(ord.id);
+                      setActiveView('view-order');
+                    }
+                  }
                   setActiveBannerNotification(null);
                 }}
-                className="p-1 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-600 self-start transition-all cursor-pointer"
+                className="flex-1 min-w-0 flex gap-3 text-left items-start cursor-pointer rounded-lg p-2 transition-colors hover:bg-slate-50"
               >
-                <CloseIcon className="w-3.5 h-3.5" />
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-[inset_0_1px_0_var(--fill-highlight)] ${
+                  activeBannerNotification.type === 'success' ? 'bg-success' :
+                  activeBannerNotification.type === 'warning' ? 'bg-danger' :
+                  'bg-primary'
+                }`}>
+                  <Bell className="w-4 h-4" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-900 tracking-tight leading-none">
+                      {activeBannerNotification.title}
+                    </span>
+                    <span className="text-2xs text-primary-ink font-semibold uppercase tracking-wider ml-1 bg-indigo-50 px-1.5 py-px rounded-full">
+                      Հիմա
+                    </span>
+                  </div>
+                  <p className="text-2xs text-slate-500 font-medium leading-normal mt-1.5 whitespace-pre-line">
+                    {activeBannerNotification.body}
+                  </p>
+                  {activeBannerNotification.orderId && (
+                    <span className="text-2xs text-primary-ink font-semibold mt-2 flex items-center gap-1">
+                      Անցնել պատվերին <ChevronRight className="w-2.5 h-2.5" aria-hidden="true" />
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveBannerNotification(null)}
+                aria-label="Փակել ծանուցումը"
+                className="p-1.5 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-900 self-start transition-colors cursor-pointer shrink-0"
+              >
+                <CloseIcon className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           </motion.div>

@@ -349,28 +349,28 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       {/* Global Validation Alert */}
       {Object.keys(errors).length > 0 && (
         <div className="bg-rose-50 border border-rose-200 p-3.5 sm:p-4 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold shadow-xs">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+          <AlertCircle className="w-5 h-5 text-danger-edge shrink-0" />
           <span>Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը կարմիրով նշված հատվածներում:</span>
         </div>
       )}
 
       {/* Step Indicators Header - Fully Adaptive */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs">
+      <div className="bg-surface p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
         {/* Mobile Stepper (< sm) */}
         <div className="block sm:hidden space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-extrabold text-slate-800">Վաճառքի 3 Քայլ</span>
+              <span className="font-bold text-slate-800">Վաճառքի 3 Քայլ</span>
             </div>
-            <span className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+            <span className="text-xs font-mono font-bold text-primary-ink bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
               Քայլ 1 / 3
             </span>
           </div>
           <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-indigo-600 h-full w-1/3 rounded-full transition-all duration-300" />
+            <div className="bg-primary h-full w-1/3 rounded-full transition-all duration-300" />
           </div>
-          <p className="text-[11px] font-bold text-indigo-700 truncate">
+          <p className="text-xs font-bold text-primary-ink truncate">
             1. Հավաքել Ապրանքները և Ասել Գումարը
           </p>
         </div>
@@ -379,21 +379,21 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
         <div className="hidden sm:flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 shrink-0">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-extrabold text-slate-800 whitespace-nowrap">Վաճառքի Գործընթաց՝</span>
+            <span className="font-bold text-slate-800 whitespace-nowrap">Վաճառքի Գործընթաց՝</span>
           </div>
           <div className="flex items-center gap-1.5 lg:gap-2 flex-1 justify-end">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-bold shadow-2xs">
-              <span className="w-4.5 h-4.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shrink-0">1</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-primary-ink rounded-xl font-bold shadow-2xs">
+              <span className="w-4.5 h-4.5 rounded-full bg-primary text-white flex items-center justify-center text-2xs shrink-0">1</span>
               <span className="truncate">1. Ապրանքներ & Գումար</span>
             </div>
-            <span className="text-slate-300 font-bold">→</span>
+            <span className="text-slate-500 font-bold">→</span>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl font-bold">
-              <span className="w-4.5 h-4.5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] shrink-0">2</span>
+              <span className="w-4.5 h-4.5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-2xs shrink-0">2</span>
               <span className="truncate">2. Հաճախորդ</span>
             </div>
-            <span className="text-slate-300 font-bold">→</span>
+            <span className="text-slate-500 font-bold">→</span>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl font-bold">
-              <span className="w-4.5 h-4.5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] shrink-0">3</span>
+              <span className="w-4.5 h-4.5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-2xs shrink-0">3</span>
               <span className="truncate">3. Վճարում & Դրամարկղ</span>
             </div>
           </div>
@@ -401,22 +401,22 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       </div>
 
       {/* STEP 1: Products Table & Instant Price to Tell Customer */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 border-indigo-200/80 shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border-2 border-indigo-200/80 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-start sm:items-center gap-3">
-            <span className="w-8 h-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-xs shrink-0 mt-0.5 sm:mt-0">
+            <span className="w-8 h-8 rounded-2xl bg-primary text-white flex items-center justify-center text-sm font-bold shadow-xs shrink-0 mt-0.5 sm:mt-0">
               1
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 leading-tight">
+                <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-slate-900 leading-tight">
                   Ապրանքների Հավաքում և Գումարի Հաշվարկ
                 </h2>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md whitespace-nowrap">
+                <span className="text-2xs font-bold text-primary-ink bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md whitespace-nowrap">
                   առաջին հերթին
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+              <p className="text-xs text-slate-500 font-medium mt-0.5 leading-snug">
                 Ավելացրեք ապրանքները SKU-ով կամ կատալոգից և հաճախորդին ասեք ընդհանուր գումարը
               </p>
             </div>
@@ -425,7 +425,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           <button
             type="button"
             onClick={() => handleAddItem()}
-            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs shrink-0 cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-primary hover:bg-primary-strong text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Ավելացնել Ապրանք</span>
@@ -436,16 +436,17 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
         <div className="bg-slate-50/90 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
+                aria-label="Որոնել կատալոգում ըստ Կոդի կամ Արտիկուլի"
                 type="text"
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
                 placeholder="Որոնել կատալոգում ըստ Կոդի կամ Արտիկուլի..."
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+                className="w-full pl-9 pr-3 py-2 bg-surface border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
               />
             </div>
-            <span className="text-[11px] font-bold text-slate-400 hidden xl:inline shrink-0">
+            <span className="text-xs font-bold text-slate-500 hidden xl:inline shrink-0">
               Արագ ընտրություն՝
             </span>
           </div>
@@ -456,22 +457,22 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                 key={idx}
                 type="button"
                 onClick={() => handleAddItem(preset)}
-                className="px-2.5 sm:px-3 py-1.5 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 text-[11px] sm:text-[11.5px] font-medium rounded-xl shrink-0 transition-all flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 bg-surface hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-primary-ink text-xs sm:text-xs font-medium rounded-xl shrink-0 transition-all flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
               >
-                <span className="font-mono font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 text-[10px] sm:text-[10.5px]">
+                <span className="font-mono font-bold text-primary-ink bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 text-2xs sm:text-2xs">
                   {preset.code}
                 </span>
-                <span className="font-mono font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80 text-[10px] sm:text-[10.5px]">
+                <span className="font-mono font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80 text-2xs sm:text-2xs">
                   {preset.artikul}
                 </span>
-                <span className="text-slate-400 font-mono text-[10px] sm:text-[10.5px] whitespace-nowrap">({preset.price.toLocaleString()} ֏)</span>
+                <span className="text-slate-500 font-mono text-2xs sm:text-2xs whitespace-nowrap">({preset.price.toLocaleString()} ֏)</span>
               </button>
             ))}
           </div>
         </div>
 
         {errors.items && (
-          <p className="text-xs text-rose-500 font-bold bg-rose-50 p-3 rounded-xl border border-rose-200">
+          <p className="text-xs text-danger-edge font-bold bg-rose-50 p-3 rounded-xl border border-rose-200">
             {errors.items}
           </p>
         )}
@@ -480,7 +481,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/60">
+              <tr className="border-b border-slate-200 text-2xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-50/60">
                 <th className="py-2.5 px-3 w-40 rounded-l-xl">Ապրանքի Կոդ</th>
                 <th className="py-2.5 px-3 w-40">Արտիկուլ (Artikul)</th>
                 <th className="py-2.5 px-3 w-28 text-center">Քանակ</th>
@@ -501,20 +502,22 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                   <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-2.5 px-3">
                       <input
+                        aria-label="Ապրանքի կոդ"
                         type="text"
                         value={item.code || ''}
                         onChange={(e) => handleItemChange(item.id, 'code', e.target.value)}
                         placeholder="օր.՝ 4203"
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-black text-indigo-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-primary-ink focus:bg-surface focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </td>
                     <td className="py-2.5 px-3">
                       <input
+                        aria-label="Արտիկուլ (Artikul)"
                         type="text"
                         value={item.artikul || ''}
                         onChange={(e) => handleItemChange(item.id, 'artikul', e.target.value)}
                         placeholder="օր.՝ ART-4203"
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-amber-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-amber-800 focus:bg-surface focus:outline-none focus:ring-1 focus:ring-amber-500"
                       />
                     </td>
                     <td className="py-2.5 px-3">
@@ -522,21 +525,22 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                         <button
                           type="button"
                           onClick={() => handleAdjustQuantity(item.id, -1)}
-                          className="h-6 w-6 rounded bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all shadow-2xs text-xs font-bold cursor-pointer"
+                          className="h-6 w-6 rounded bg-surface hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all shadow-2xs text-xs font-bold cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
                         <input
+                          aria-label="Քանակ"
                           type="number"
                           min="1"
                           value={item.quantity || ''}
                           onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                          className="w-10 text-center bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                          className="w-10 text-center bg-transparent text-xs font-mono font-bold text-slate-900 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         <button
                           type="button"
                           onClick={() => handleAdjustQuantity(item.id, 1)}
-                          className="h-6 w-6 rounded bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all shadow-2xs text-xs font-bold cursor-pointer"
+                          className="h-6 w-6 rounded bg-surface hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all shadow-2xs text-xs font-bold cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -544,33 +548,35 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     </td>
                     <td className="py-2.5 px-3">
                       <input
+                        aria-label="Միավորի Գին (֏)"
                         type="number"
                         min="0"
                         step="100"
                         value={item.price || ''}
                         onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
                         placeholder="0"
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-right text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-right text-slate-800 focus:bg-surface focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-1">
                         <input
+                          aria-label="Ապրանքի Զեղչ"
                           type="number"
                           min="0"
                           max={item.discountType === 'FIXED' ? lineSubtotal : 100}
                           value={item.discount || ''}
                           onChange={(e) => handleItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
                           placeholder="0"
-                          className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-center text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-center text-slate-900 focus:bg-surface focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
-                        <div className="flex rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-white shadow-2xs">
+                        <div className="flex rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-surface shadow-2xs">
                           <button
                             type="button"
                             onClick={() => handleItemChange(item.id, 'discountType', 'PERCENT')}
-                            className={`px-1.5 py-1 text-[11px] font-bold cursor-pointer transition-all ${
+                            className={`px-1.5 py-1 text-xs font-bold cursor-pointer transition-all ${
                               (!item.discountType || item.discountType === 'PERCENT')
-                                ? 'bg-indigo-600 text-white' 
+                                ? 'bg-primary text-white' 
                                 : 'text-slate-600 hover:bg-slate-100'
                             }`}
                             title="Տոկոսային զեղչ (%)"
@@ -580,9 +586,9 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                           <button
                             type="button"
                             onClick={() => handleItemChange(item.id, 'discountType', 'FIXED')}
-                            className={`px-1.5 py-1 text-[11px] font-bold cursor-pointer transition-all ${
+                            className={`px-1.5 py-1 text-xs font-bold cursor-pointer transition-all ${
                               item.discountType === 'FIXED' 
-                                ? 'bg-indigo-600 text-white' 
+                                ? 'bg-primary text-white' 
                                 : 'text-slate-600 hover:bg-slate-100'
                             }`}
                             title="Գումարային զեղչ (֏)"
@@ -595,20 +601,20 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     <td className="py-2.5 px-3 text-right">
                       {hasDiscount ? (
                         <div>
-                          <span className="font-mono text-[10.5px] text-slate-400 line-through block">
+                          <span className="font-mono text-2xs text-slate-500 line-through block">
                             {lineSubtotal.toLocaleString()} ֏
                           </span>
                           <div className="flex items-center justify-end gap-1">
-                            <span className="font-mono text-xs font-black text-emerald-700">
+                            <span className="font-mono text-xs font-bold text-emerald-700">
                               {lineTotal.toLocaleString()} ֏
                             </span>
-                            <span className="text-[10px] font-bold bg-rose-50 text-rose-600 px-1 py-0.2 rounded border border-rose-200">
+                            <span className="text-2xs font-bold bg-rose-50 text-rose-600 px-1 py-0.5 rounded border border-rose-200">
                               -{itemDiscount.toLocaleString()}
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <span className="font-mono text-xs font-black text-slate-900">
+                        <span className="font-mono text-xs font-bold text-slate-900">
                           {lineTotal.toLocaleString()} ֏
                         </span>
                       )}
@@ -618,7 +624,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                         type="button"
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={items.length === 1}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-20 hover:bg-rose-50 cursor-pointer"
+                        className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-20 hover:bg-rose-50 cursor-pointer"
                         title="Հեռացնել տողը"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -646,7 +652,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               >
                 <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10.5px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                    <span className="text-2xs font-bold text-primary-ink bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
                       #{idx + 1}
                     </span>
                     <span className="text-xs font-bold text-slate-700">Ապրանքի Տվյալներ</span>
@@ -655,7 +661,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      className="p-1 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1 text-danger-edge hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
                       title="Հեռացնել"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -665,31 +671,33 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Ապրանքի Կոդ</label>
+                    <label className="text-2xs font-bold text-slate-500 block mb-1">Ապրանքի Կոդ</label>
                     <input
+                      aria-label="Ապրանքի Կոդ"
                       type="text"
                       value={item.code || ''}
                       onChange={(e) => handleItemChange(item.id, 'code', e.target.value)}
                       placeholder="օր.՝ 4203"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-black text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                      className="w-full px-3 py-2 bg-surface border border-slate-200 rounded-xl text-xs font-mono font-bold text-primary-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Արտիկուլ (Artikul)</label>
+                    <label className="text-2xs font-bold text-slate-500 block mb-1">Արտիկուլ (Artikul)</label>
                     <input
+                      aria-label="Արտիկուլ (Artikul)"
                       type="text"
                       value={item.artikul || ''}
                       onChange={(e) => handleItemChange(item.id, 'artikul', e.target.value)}
                       placeholder="օր.՝ ART-4203"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      className="w-full px-3 py-2 bg-surface border border-slate-200 rounded-xl text-xs font-mono font-bold text-amber-800 focus:outline-none focus:ring-2 focus:ring-warning/40"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Քանակ</label>
-                    <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-1">
+                    <label className="text-2xs font-bold text-slate-500 block mb-1">Քանակ</label>
+                    <div className="flex items-center justify-between bg-surface border border-slate-200 rounded-xl p-1">
                       <button
                         type="button"
                         onClick={() => handleAdjustQuantity(item.id, -1)}
@@ -709,39 +717,41 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Միավորի Գին (֏)</label>
+                    <label className="text-2xs font-bold text-slate-500 block mb-1">Միավորի Գին (֏)</label>
                     <input
+                      aria-label="Միավորի Գին (֏)"
                       type="number"
                       value={item.price || ''}
                       onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-right text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                      className="w-full px-2.5 py-2 bg-surface border border-slate-200 rounded-xl text-xs font-mono font-bold text-right text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-500">Զեղչ՝</span>
+                    <span className="text-2xs font-bold text-slate-500">Զեղչ՝</span>
                     <input
+                      aria-label="Ապրանքի Զեղչ"
                       type="number"
                       value={item.discount || ''}
                       onChange={(e) => handleItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-14 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono text-center"
+                      className="w-14 px-2 py-1 bg-surface border border-slate-200 rounded-lg text-xs font-mono text-center"
                     />
-                    <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs">
+                    <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-surface shadow-2xs">
                       <button
                         type="button"
                         onClick={() => handleItemChange(item.id, 'discountType', 'PERCENT')}
-                        className={`px-2 py-1 text-[10.5px] font-black cursor-pointer ${(!item.discountType || item.discountType === 'PERCENT') ? 'bg-indigo-600 text-white' : 'text-slate-600'}`}
+                        className={`px-2 py-1 text-2xs font-bold cursor-pointer ${(!item.discountType || item.discountType === 'PERCENT') ? 'bg-primary text-white' : 'text-slate-600'}`}
                       >
                         %
                       </button>
                       <button
                         type="button"
                         onClick={() => handleItemChange(item.id, 'discountType', 'FIXED')}
-                        className={`px-2 py-1 text-[10.5px] font-black cursor-pointer ${item.discountType === 'FIXED' ? 'bg-indigo-600 text-white' : 'text-slate-600'}`}
+                        className={`px-2 py-1 text-2xs font-bold cursor-pointer ${item.discountType === 'FIXED' ? 'bg-primary text-white' : 'text-slate-600'}`}
                       >
                         ֏
                       </button>
@@ -750,11 +760,11 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
                   <div className="text-right">
                     {hasDiscount && (
-                      <span className="text-[10px] text-slate-400 line-through font-mono block">
+                      <span className="text-2xs text-slate-500 line-through font-mono block">
                         {lineSubtotal.toLocaleString()} ֏
                       </span>
                     )}
-                    <span className="font-mono text-xs font-black text-slate-900">
+                    <span className="font-mono text-xs font-bold text-slate-900">
                       {lineTotal.toLocaleString()} ֏
                     </span>
                   </div>
@@ -770,10 +780,10 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Percent className="w-3.5 h-3.5 text-indigo-600" /> Պատվերի Ընդհանուր Լրացուցիչ Զեղչ՝
+                <Percent className="w-3.5 h-3.5 text-primary-ink" /> Պատվերի Ընդհանուր Լրացուցիչ Զեղչ՝
               </span>
               {itemsDiscountTotal > 0 && (
-                <span className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <span className="text-2xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   Ապրանքների զեղչ՝ -{itemsDiscountTotal.toLocaleString()} ֏
                 </span>
               )}
@@ -781,32 +791,33 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
             <div className="flex items-center gap-2">
               <input
+                aria-label="Պատվերի ընդհանուր լրացուցիչ զեղչ"
                 type="number"
                 min="0"
                 value={formData.discount || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
                 placeholder="0"
-                className="w-24 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-24 px-2.5 py-1.5 bg-surface border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
-              <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs">
+              <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-surface shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, discountType: 'PERCENT' }))}
-                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer transition-all ${formData.discountType === 'PERCENT' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer transition-all ${formData.discountType === 'PERCENT' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
                 >
                   %
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, discountType: 'FIXED' }))}
-                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer transition-all ${formData.discountType === 'FIXED' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer transition-all ${formData.discountType === 'FIXED' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
                 >
                   ֏
                 </button>
               </div>
 
               {orderDiscountAmount > 0 && (
-                <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
                   -{orderDiscountAmount.toLocaleString()} ֏
                 </span>
               )}
@@ -814,14 +825,14 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           </div>
 
           {/* TOTAL ANNOUNCEMENT BANNER - "Հաճախորդին ասելու գումարը" */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-md border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="bg-ink-inverse text-white p-4 sm:p-5 rounded-2xl shadow-md border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                <span className="text-2xs font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
                   Հաճախորդին Ասելու Գումարը
                 </span>
               </div>
-              <div className="text-[11px] text-slate-300">
+              <div className="text-xs text-white/75">
                 Ապրանքներ՝ {items.length} հատ • Ենթագումար՝ {grossSubtotalAmount.toLocaleString()} ֏
                 {totalCombinedDiscount > 0 && (
                   <span className="text-emerald-400 font-bold ml-1.5">
@@ -831,12 +842,12 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               </div>
             </div>
 
-            <div className="text-right sm:border-l sm:border-slate-700/80 sm:pl-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            <div className="text-right sm:border-l sm:border-white/15 sm:pl-4">
+              <span className="text-2xs font-bold uppercase tracking-wider text-white/70 block">
                 Ընդհանուր Վճարման Գումար
               </span>
-              <span className="text-2xl sm:text-3xl font-black text-amber-300 font-mono tracking-tight">
-                {totalAmount.toLocaleString()} <span className="text-sm font-normal text-slate-400">֏</span>
+              <span className="text-2xl sm:text-3xl font-bold text-amber-400 font-mono tracking-tight">
+                {totalAmount.toLocaleString()} <span className="text-sm font-normal text-white/60">֏</span>
               </span>
             </div>
           </div>
@@ -844,16 +855,16 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       </div>
 
       {/* STEP 2: Sale Type & Customer Registration */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-          <span className="w-8 h-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-xs">
+          <span className="w-8 h-8 rounded-2xl bg-primary text-white flex items-center justify-center text-sm font-bold shadow-xs">
             2
           </span>
           <div>
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
               Վաճառքի Տեսակ և Հաճախորդի Տվյալների Գրանցում
             </h2>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               Լրացրեք հաճախորդի տվյալները գումարը ճշտելուց հետո
             </p>
           </div>
@@ -861,8 +872,8 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
         {/* 2.1 Sale Type Selector Cards */}
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-slate-800 block mb-2">
-            Վաճառքի Տեսակ <span className="text-rose-500">*</span>
+          <label className="section-title block mb-2">
+            Վաճառքի Տեսակ <span className="text-danger-edge">*</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
@@ -878,23 +889,23 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               }}
               className={`p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
                 formData.saleType === SaleType.ON_SITE 
-                  ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-indigo-100' 
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-primary/25' 
+                  : 'border-slate-200 hover:border-slate-300 bg-surface'
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.ON_SITE ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.ON_SITE ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 {formData.saleType === SaleType.ON_SITE && (
-                  <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                  <span className="text-2xs font-bold text-primary-ink bg-indigo-100 px-2 py-0.5 rounded-full">
                     Ընտրված
                   </span>
                 )}
               </div>
               <div>
-                <p className="font-extrabold text-xs text-slate-900">Վաճառք Տեղում (Սրահ)</p>
-                <p className="text-[10.5px] text-slate-500 font-medium mt-0.5">Հաճախորդը գնում է խանութ-սրահից</p>
+                <p className="font-bold text-xs text-slate-900">Վաճառք Տեղում (Սրահ)</p>
+                <p className="text-2xs text-slate-500 font-medium mt-0.5">Հաճախորդը գնում է խանութ-սրահից</p>
               </div>
             </button>
 
@@ -906,23 +917,23 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               }}
               className={`p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
                 formData.saleType === SaleType.DELIVERY 
-                  ? 'border-sky-600 bg-sky-50/50 shadow-xs ring-2 ring-sky-100' 
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  ? 'border-sky-600 bg-sky-50/50 shadow-xs ring-2 ring-info/25' 
+                  : 'border-slate-200 hover:border-slate-300 bg-surface'
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.DELIVERY ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.DELIVERY ? 'bg-info text-white' : 'bg-slate-100 text-slate-600'}`}>
                   <Truck className="w-5 h-5" />
                 </div>
                 {formData.saleType === SaleType.DELIVERY && (
-                  <span className="text-[10px] font-black text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full">
+                  <span className="text-2xs font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full">
                     Ընտրված
                   </span>
                 )}
               </div>
               <div>
-                <p className="font-extrabold text-xs text-slate-900">Առաքում (Delivery)</p>
-                <p className="text-[10.5px] text-slate-500 font-medium mt-0.5">Առաքիչով հասցեին հասցնելու համար</p>
+                <p className="font-bold text-xs text-slate-900">Առաքում (Delivery)</p>
+                <p className="text-2xs text-slate-500 font-medium mt-0.5">Առաքիչով հասցեին հասցնելու համար</p>
               </div>
             </button>
 
@@ -934,23 +945,23 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
               }}
               className={`p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
                 formData.saleType === SaleType.PICKUP 
-                  ? 'border-amber-600 bg-amber-50/50 shadow-xs ring-2 ring-amber-100' 
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                  ? 'border-amber-600 bg-amber-50/50 shadow-xs ring-2 ring-warning/25' 
+                  : 'border-slate-200 hover:border-slate-300 bg-surface'
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.PICKUP ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2.5 rounded-xl ${formData.saleType === SaleType.PICKUP ? 'bg-warning text-white' : 'bg-slate-100 text-slate-600'}`}>
                   <Store className="w-5 h-5" />
                 </div>
                 {formData.saleType === SaleType.PICKUP && (
-                  <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  <span className="text-2xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
                     Ընտրված
                   </span>
                 )}
               </div>
               <div>
-                <p className="font-extrabold text-xs text-slate-900">Մոտեցնել Խանութ</p>
-                <p className="text-[10.5px] text-slate-500 font-medium mt-0.5">Պահեստից տեղափոխել նշված մասնաճյուղ</p>
+                <p className="font-bold text-xs text-slate-900">Մոտեցնել Խանութ</p>
+                <p className="text-2xs text-slate-500 font-medium mt-0.5">Պահեստից տեղափոխել նշված մասնաճյուղ</p>
               </div>
             </button>
           </div>
@@ -960,42 +971,44 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
         <div className="pt-2 border-t border-slate-100 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                Հաճախորդի Անուն / Կոնտակտ {formData.saleType !== SaleType.ON_SITE ? <span className="text-rose-500">*</span> : <span className="text-[10px] text-slate-400 font-normal">(օպցիոնալ)</span>}
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Հաճախորդի Անուն / Կոնտակտ {formData.saleType !== SaleType.ON_SITE ? <span className="text-danger-edge">*</span> : <span className="text-2xs text-slate-500 font-normal">(օպցիոնալ)</span>}
               </label>
               <div className="relative">
-                <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   name="customerName"
+                  aria-label="Հաճախորդի անուն / կոնտակտ"
                   value={formData.customerName}
                   onChange={handleChange}
                   placeholder={formData.saleType === SaleType.ON_SITE ? "Տեղում հաճախորդ (օպցիոնալ)" : "օր.՝ Արմեն Գրիգորյան"}
-                  className={`input-field pl-9 ${errors.customerName ? 'border-rose-300 ring-1 ring-rose-300' : ''}`}
+                  className={`input-field pl-9 ${errors.customerName ? 'border-danger-edge ring-1 ring-danger-edge/30' : ''}`}
                 />
               </div>
               {errors.customerName && (
-                <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.customerName}</p>
+                <p className="text-2xs text-danger-edge font-bold mt-1">{errors.customerName}</p>
               )}
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                Հեռախոսահամար {formData.saleType !== SaleType.ON_SITE ? <span className="text-rose-500">*</span> : <span className="text-[10px] text-slate-400 font-normal">(օպցիոնալ)</span>}
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Հեռախոսահամար {formData.saleType !== SaleType.ON_SITE ? <span className="text-danger-edge">*</span> : <span className="text-2xs text-slate-500 font-normal">(օպցիոնալ)</span>}
               </label>
               <div className="relative">
-                <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Phone className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  aria-label="Հեռախոսահամար"
                   type="text"
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   placeholder="+374 (XX) XX-XX-XX"
-                  className={`input-field pl-9 font-mono font-bold ${errors.phoneNumber ? 'border-rose-300 ring-1 ring-rose-300' : ''}`}
+                  className={`input-field pl-9 font-mono font-bold ${errors.phoneNumber ? 'border-danger-edge ring-1 ring-danger-edge/30' : ''}`}
                 />
               </div>
               {errors.phoneNumber && (
-                <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.phoneNumber}</p>
+                <p className="text-2xs text-danger-edge font-bold mt-1">{errors.phoneNumber}</p>
               )}
 
               {/* Additional Phone Numbers */}
@@ -1005,6 +1018,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     <div className="relative flex-1">
                       <Phone className="w-3.5 h-3.5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
+                        aria-label="Հեռախոսահամար"
                         type="text"
                         value={phone}
                         onChange={(e) => handleAdditionalPhoneChange(pIdx, e.target.value)}
@@ -1015,7 +1029,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     <button
                       type="button"
                       onClick={() => handleRemoveAdditionalPhone(pIdx)}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0"
+                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0"
                       title="Հեռացնել"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1026,7 +1040,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                 <button
                   type="button"
                   onClick={handleAddAdditionalPhone}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer border border-dashed border-indigo-200 mt-1"
+                  className="text-xs font-bold text-primary-ink flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer border border-dashed border-indigo-200 mt-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>+ Ավելացնել հավելյալ հեռախոսահամար</span>
@@ -1037,10 +1051,11 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Սրահի Խորհրդատու (Աշխատակից)
               </label>
               <select
+                aria-label="Սրահի խորհրդատու (աշխատակից)"
                 name="salesRep"
                 value={formData.salesRep}
                 onChange={handleChange}
@@ -1055,10 +1070,11 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
             {formData.saleType === SaleType.PICKUP && (
               <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                <label className="text-xs font-bold text-slate-700 block mb-1">
                   Նպատակակետ Մասնաճյուղ
                 </label>
                 <select
+                  aria-label="Նպատակակետ մասնաճյուղ"
                   name="pickupBranch"
                   value={formData.pickupBranch}
                   onChange={handleChange}
@@ -1076,32 +1092,34 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           {formData.saleType === SaleType.DELIVERY && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
               <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                  Առաքման Հասցե <span className="text-rose-500">*</span>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Առաքման Հասցե <span className="text-danger-edge">*</span>
                 </label>
                 <div className="relative">
                   <MapPin className="w-3.5 h-3.5 text-sky-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    aria-label="Առաքման հասցե"
                     type="text"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
                     placeholder="օր.՝ Կոմիտաս 45, բն. 12"
-                    className={`input-field pl-9 ${errors.address ? 'border-rose-300 ring-1 ring-rose-300' : ''}`}
+                    className={`input-field pl-9 ${errors.address ? 'border-danger-edge ring-1 ring-danger-edge/30' : ''}`}
                   />
                 </div>
                 {errors.address && (
-                  <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.address}</p>
+                  <p className="text-2xs text-danger-edge font-bold mt-1">{errors.address}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                <label className="text-xs font-bold text-slate-700 block mb-1">
                   Առաքման Ամսաթիվ
                 </label>
                 <input
                   type="date"
                   name="deliveryDate"
+                  aria-label="Առաքման ամսաթիվ"
                   value={formData.deliveryDate}
                   onChange={handleChange}
                   className="input-field text-xs font-mono"
@@ -1113,22 +1131,22 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       </div>
 
       {/* STEP 3: Payment Conditions & Transfer to Kassa */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-xs">
+            <span className="w-8 h-8 rounded-2xl bg-primary text-white flex items-center justify-center text-sm font-bold shadow-xs">
               3
             </span>
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
                 Վճարման Պայմաններ և Փոխանցում Դրամարկղին (POS)
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Նշեք վճարման պայմանները և փոխանցեք դրամարկղին՝ ՀԴՄ տպելու կամ գումարը գանձելու համար
               </p>
             </div>
           </div>
-          <span className="text-[10.5px] font-bold text-slate-400 font-mono hidden sm:inline">
+          <span className="text-2xs font-bold text-slate-500 font-mono hidden sm:inline">
             Սրահ / POS Դրամարկղ
           </span>
         </div>
@@ -1137,7 +1155,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           {/* Payment Terms (Full vs Prepayment) */}
           <div className="space-y-3.5">
             <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
                 Վճարման Պայման (Տեսակ)
               </label>
               {formData.saleType === SaleType.ON_SITE ? (
@@ -1146,7 +1164,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <span>Լրիվ վճարում (100%)</span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-semibold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                  <span className="text-2xs text-slate-500 font-semibold bg-surface px-2.5 py-1 rounded-lg border border-slate-200">
                     Տեղում վաճառքի դեպքում մասնակի վճարում չկա
                   </span>
                 </div>
@@ -1160,7 +1178,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     }}
                     className={`px-3 py-2.5 rounded-2xl text-xs font-bold border text-left transition-all flex items-center justify-between cursor-pointer ${
                       formData.paymentTerms === PaymentTerms.FULL
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                        ? 'bg-ink-inverse text-white border-white/10 shadow-2xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
@@ -1168,7 +1186,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                       <span className={`w-2 h-2 rounded-full ${formData.paymentTerms === PaymentTerms.FULL ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                       <span>Լրիվ վճարում</span>
                     </div>
-                    <span className="text-[10px] opacity-70">100%</span>
+                    <span className="text-2xs opacity-70">100%</span>
                   </button>
 
                   <button
@@ -1184,15 +1202,15 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     }}
                     className={`px-3 py-2.5 rounded-2xl text-xs font-bold border text-left transition-all flex items-center justify-between cursor-pointer ${
                       formData.paymentTerms === PaymentTerms.PREPAYMENT
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                        ? 'bg-warning text-white border-white/20 shadow-2xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${formData.paymentTerms === PaymentTerms.PREPAYMENT ? 'bg-white' : 'bg-amber-400'}`} />
+                      <span className={`w-2 h-2 rounded-full ${formData.paymentTerms === PaymentTerms.PREPAYMENT ? 'bg-surface' : 'bg-amber-400'}`} />
                       <span>Մասնակի վճարում</span>
                     </div>
-                    <span className="text-[10px] opacity-90 font-mono">Մասնակի</span>
+                    <span className="text-2xs opacity-90 font-mono">Մասնակի</span>
                   </button>
                 </div>
               )}
@@ -1202,7 +1220,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
             {isPrepayment && (
               <div className="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-extrabold text-amber-950">
+                  <span className="font-bold text-amber-950">
                     Մասնակի վճարման Գումար՝
                   </span>
                   <div className="flex gap-1">
@@ -1215,7 +1233,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                         key={i}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, prepaymentAmount: pct.val }))}
-                        className="text-[10px] font-bold bg-white text-amber-900 px-2 py-0.5 rounded border border-amber-200 hover:bg-amber-100 cursor-pointer"
+                        className="text-2xs font-bold bg-surface text-amber-900 px-2 py-0.5 rounded border border-amber-200 hover:bg-amber-100 cursor-pointer"
                       >
                         {pct.label}
                       </button>
@@ -1225,6 +1243,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
                 <div className="flex items-center gap-2">
                   <input
+                    aria-label="Մասնակի վճարման չափը"
                     type="number"
                     min="0"
                     max={totalAmount}
@@ -1232,14 +1251,14 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                     value={formData.prepaymentAmount || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, prepaymentAmount: parseFloat(e.target.value) || 0 }))}
                     placeholder="Մասնակի վճարման չափը..."
-                    className="w-full px-3 py-1.5 bg-white border border-amber-300 rounded-xl text-xs font-mono font-black text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="w-full px-3 py-1.5 bg-surface border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
-                  <span className="text-xs font-black text-amber-900 font-mono shrink-0">֏</span>
+                  <span className="text-xs font-bold text-amber-900 font-mono shrink-0">֏</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-1.5 border-t border-amber-200/70 text-xs">
                   <span className="font-bold text-amber-900">Մնացորդ Վճարման Ենթակա՝</span>
-                  <span className="font-mono text-xs font-black text-amber-950 bg-white px-2 py-0.5 rounded-lg border border-amber-300">
+                  <span className="font-mono text-xs font-bold text-amber-950 bg-surface px-2 py-0.5 rounded-lg border border-amber-300">
                     {remainingBalance.toLocaleString()} ֏
                   </span>
                 </div>
@@ -1248,7 +1267,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
             {/* Payment Method Selector */}
             <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
                 Վճարման Եղանակ
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -1273,7 +1292,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                       }}
                       className={`px-3 py-2.5 rounded-xl text-xs font-bold border flex items-center gap-2 transition-all cursor-pointer ${
                         isSelected 
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' 
+                          ? 'bg-ink-inverse text-white border-white/10 shadow-2xs' 
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -1291,16 +1310,16 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
             {/* POS & Cashier Note */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-bold text-slate-700">
+                <label className="text-xs font-bold text-slate-700">
                   Նշում Դրամարկղին (POS / ՀԴՄ)
                 </label>
-                <div className="flex items-center gap-1 text-[9.5px]">
+                <div className="flex items-center gap-1 text-2xs">
                   {['ՀԴՄ տեղում', 'POS վաճառք', 'Տեղում վճարում', 'Մասնակի վճարումով'].map((quickNote, i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, cashierNote: quickNote }))}
-                      className="text-indigo-600 hover:underline font-semibold cursor-pointer"
+                      className="text-primary-ink hover:underline font-semibold cursor-pointer"
                     >
                       {quickNote}
                     </button>
@@ -1308,6 +1327,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
                 </div>
               </div>
               <input
+                aria-label="Դրամարկղի նշում"
                 type="text"
                 name="cashierNote"
                 value={formData.cashierNote}
@@ -1319,12 +1339,12 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
 
             {/* Cashier Workflow Info Badge */}
             <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 text-xs text-slate-600">
-              <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-primary-ink shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <p className="font-bold text-slate-800">
                   Կարգավիճակ՝ {isPrepayment ? 'Մասնակի վճարված' : 'Սպասում է դրամարկղին (Չվճարված)'}
                 </p>
-                <p className="text-[10.5px] text-slate-500 leading-snug">
+                <p className="text-2xs text-slate-500 leading-snug">
                   Պատվերը գրանցելուց հետո կփոխանցվի դրամարկղին։ Վերջնական վճարումը կհաստատվի դրամարկղում։
                 </p>
               </div>
@@ -1333,7 +1353,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
             {/* Summary of what is payable now */}
             <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs">
               <span className="font-bold text-indigo-900">Դրամարկղում գանձվող գումարը՝</span>
-              <span className="font-mono text-sm font-black text-indigo-950">
+              <span className="font-mono text-sm font-bold text-indigo-950">
                 {payableNowAmount.toLocaleString()} ֏
               </span>
             </div>
@@ -1342,12 +1362,12 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
       </div>
 
       {/* Bottom Floating Bar / Actions - Fully Responsive Stacking */}
-      <div className="bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xl sticky bottom-3 sm:bottom-4 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+      <div className="bg-surface/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xl sticky bottom-3 sm:bottom-4 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto order-1 sm:order-2 sm:ml-auto">
           <button
             type="button"
             onClick={() => handleSubmit(false)}
-            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-primary hover:bg-primary-strong text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Գրանցել և Փոխանցել Դրամարկղին</span>
@@ -1356,7 +1376,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
           <button
             type="button"
             onClick={() => handleSubmit(true)}
-            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ring-2 ring-emerald-400/30 cursor-pointer"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-ink-inverse hover:bg-ink-inverse/85 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ring-2 ring-emerald-400/30 cursor-pointer"
           >
             <FileText className="w-4 h-4 text-emerald-400" />
             <span>Գրանցել & Բացել PDF Էջը</span>

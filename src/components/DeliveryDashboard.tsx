@@ -6,10 +6,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -40,13 +37,6 @@ interface DeliveryDashboardProps {
   orders: Order[];
   onSelectOrder?: (order: Order) => void;
 }
-
-const PAYMENT_COLORS = {
-  [PaymentMethod.CASH]: '#10b981', // emerald
-  [PaymentMethod.CARD]: '#6366f1', // indigo
-  [PaymentMethod.IDRAM]: '#f59e0b', // amber
-  [PaymentMethod.TRANSFER]: '#06b6d4', // cyan
-};
 
 export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDashboardProps) {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
@@ -224,11 +214,11 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
       className="space-y-6 pb-16 max-w-7xl mx-auto"
     >
       {/* Top Filter & Interactive Time Horizon Bar */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <span>Գործառնական Վիճակագրություն & Վերլուծություն</span>
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <span className="px-2 py-0.5 rounded-md text-2xs font-mono font-bold bg-indigo-50 text-primary-ink border border-indigo-200">
               POS Analytics
             </span>
           </h2>
@@ -253,7 +243,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
               }}
               className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                 timeFilter === tab.id 
-                  ? 'bg-white text-indigo-900 shadow-2xs' 
+                  ? 'bg-surface text-indigo-900 shadow-2xs' 
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -265,71 +255,71 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
 
       {/* Metrics Row 1: Operations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Արդյունավետություն
             </p>
-            <h3 className="text-3xl font-black text-slate-900 font-mono mt-1">
+            <h3 className="text-3xl font-bold text-slate-900 font-mono mt-1">
               {stats.rate}%
             </h3>
-            <p className="text-[11px] text-emerald-600 font-bold mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
               <Zap className="w-3 h-3" />
               <span>Կատարված պատվերներ</span>
             </p>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-primary-ink flex items-center justify-center shrink-0">
             <TrendingUp className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Ավարտված / Վաճառված
             </p>
-            <h3 className="text-3xl font-black text-slate-900 font-mono mt-1">
+            <h3 className="text-3xl font-bold text-slate-900 font-mono mt-1">
               {stats.successful}
             </h3>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               Ընդհանուր {stats.total} պատվերից
             </p>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
             <CheckCircle className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Ընթացիկ Ակտիվ
             </p>
-            <h3 className="text-3xl font-black text-slate-900 font-mono mt-1">
+            <h3 className="text-3xl font-bold text-slate-900 font-mono mt-1">
               {stats.active}
             </h3>
-            <p className="text-[11px] text-amber-600 font-bold mt-0.5">
+            <p className="text-xs text-amber-700 font-bold mt-0.5">
               Դրամարկղում կամ Առաքման մեջ
             </p>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center shrink-0">
             <Activity className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Միջին Չեկ (AOV)
             </p>
-            <h3 className="text-2xl font-black text-slate-900 font-mono mt-1">
-              {stats.averageOrderValue.toLocaleString()} <span className="text-xs font-normal text-slate-400">֏</span>
+            <h3 className="text-2xl font-bold text-slate-900 font-mono mt-1">
+              {stats.averageOrderValue.toLocaleString()} <span className="text-xs font-normal text-slate-500">֏</span>
             </h3>
-            <p className="text-[11px] text-indigo-600 font-bold mt-0.5">
+            <p className="text-xs text-primary-ink font-bold mt-0.5">
               Մեկ պատվերի միջին արժեք
             </p>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-primary-ink flex items-center justify-center shrink-0">
             <ShoppingBag className="w-6 h-6" />
           </div>
         </div>
@@ -337,18 +327,18 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
 
       {/* Metrics Row 2: Financial Stats with Progress Bars */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Վճարված Եկամուտ (Փաստացի)
             </p>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-emerald-700 font-mono">
+          <p className="text-2xl font-bold text-emerald-700 font-mono">
             {stats.totalRevenue.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-400">AMD</span>
+            <span className="text-xs font-bold text-slate-500">AMD</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
@@ -356,21 +346,21 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
               style={{ width: `${stats.grossVolume > 0 ? (stats.totalRevenue / stats.grossVolume) * 100 : 0}%` }}
             />
           </div>
-          <p className="text-[10.5px] text-slate-400">Հաստատված վճարումներ</p>
+          <p className="text-2xs text-slate-500">Հաստատված վճարումներ</p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Սպասվող Գումար (Դրամարկղ / Տեղում)
             </p>
-            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-700">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-amber-700 font-mono">
+          <p className="text-2xl font-bold text-amber-700 font-mono">
             {stats.outstandingAmount.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-400">AMD</span>
+            <span className="text-xs font-bold text-slate-500">AMD</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
@@ -378,36 +368,36 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
               style={{ width: `${stats.grossVolume > 0 ? (stats.outstandingAmount / stats.grossVolume) * 100 : 0}%` }}
             />
           </div>
-          <p className="text-[10.5px] text-slate-400">Չվճարված կամ առաքման տեղում վճարում</p>
+          <p className="text-2xs text-slate-500">Չվճարված կամ առաքման տեղում վճարում</p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-2">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <p className="section-title text-slate-500">
               Ընդհանուր Շրջանառություն
             </p>
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+            <div className="p-2 rounded-xl bg-indigo-50 text-primary-ink">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-indigo-700 font-mono">
+          <p className="text-2xl font-bold text-primary-ink font-mono">
             {stats.grossVolume.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-400">AMD</span>
+            <span className="text-xs font-bold text-slate-500">AMD</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div className="bg-indigo-600 h-full rounded-full w-full" />
+            <div className="bg-primary h-full rounded-full w-full" />
           </div>
-          <p className="text-[10.5px] text-slate-400">Բոլոր պատվերների ընդհանուր արժեք</p>
+          <p className="text-2xs text-slate-500">Բոլոր պատվերների ընդհանուր արժեք</p>
         </div>
       </div>
 
       {/* Interactive Sales Pipeline & Process Stage Funnel */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <span>Պատվերի Փուլերի Փոխակերպում (Sales Pipeline)</span>
           </h3>
-          <span className="text-xs text-slate-400 font-medium">
+          <span className="text-xs text-slate-500 font-medium">
             Ընդհանուր՝ {stats.total} պատվեր
           </span>
         </div>
@@ -417,7 +407,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
             {
               step: '1. Գրանցված (Սրահ)',
               count: stats.pending,
-              color: 'bg-amber-500',
+              color: 'bg-warning',
               bg: 'bg-amber-50/70',
               border: 'border-amber-200',
               text: 'text-amber-900',
@@ -426,7 +416,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
             {
               step: '2. POS Վաճառք',
               count: filteredOrders.filter(o => o.status === OrderStatus.SOLD).length,
-              color: 'bg-emerald-500',
+              color: 'bg-success',
               bg: 'bg-emerald-50/70',
               border: 'border-emerald-200',
               text: 'text-emerald-900',
@@ -444,7 +434,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
             {
               step: '4. Ավարտված / Հանձնված',
               count: filteredOrders.filter(o => o.status === OrderStatus.DELIVERED).length,
-              color: 'bg-indigo-600',
+              color: 'bg-primary',
               bg: 'bg-indigo-50/70',
               border: 'border-indigo-200',
               text: 'text-indigo-900',
@@ -456,14 +446,14 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
               className={`p-4 rounded-2xl border ${stage.border} ${stage.bg} flex flex-col justify-between gap-2 shadow-2xs`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black text-slate-700">{stage.step}</span>
+                <span className="text-xs font-bold text-slate-700">{stage.step}</span>
                 <span className={`w-2 h-2 rounded-full ${stage.color}`} />
               </div>
               <div>
-                <p className={`text-2xl font-black font-mono ${stage.text}`}>
+                <p className={`text-2xl font-bold font-mono ${stage.text}`}>
                   {stage.count} <span className="text-xs font-medium opacity-70">պատվեր</span>
                 </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">{stage.desc}</p>
+                <p className="text-2xs text-slate-500 mt-0.5">{stage.desc}</p>
               </div>
             </div>
           ))}
@@ -473,20 +463,20 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
       {/* Payment Method Breakdown & Channels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Methods */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-sm font-extrabold text-slate-900">
+            <h3 className="text-sm font-bold text-slate-900">
               Վճարման Եղանակների Բաշխվածություն
             </h3>
-            <span className="text-xs text-slate-400 font-medium">POS & Փոխանցումներ</span>
+            <span className="text-xs text-slate-500 font-medium">POS & Փոխանցումներ</span>
           </div>
 
           <div className="space-y-3 pt-1">
             {[
-              { id: PaymentMethod.CASH, label: 'Կանխիկ', icon: DollarSign, color: 'bg-emerald-500', text: 'text-emerald-700' },
-              { id: PaymentMethod.CARD, label: 'Քարտով (POS Տերմինալ)', icon: CreditCard, color: 'bg-indigo-600', text: 'text-indigo-700' },
-              { id: PaymentMethod.IDRAM, label: 'Idram QR', icon: Smartphone, color: 'bg-amber-500', text: 'text-amber-700' },
-              { id: PaymentMethod.TRANSFER, label: 'Փոխանցում քարտին', icon: ArrowRightLeft, color: 'bg-cyan-600', text: 'text-cyan-700' },
+              { id: PaymentMethod.CASH, label: 'Կանխիկ', icon: DollarSign, color: 'bg-success', text: 'text-emerald-700' },
+              { id: PaymentMethod.CARD, label: 'Քարտով (POS Տերմինալ)', icon: CreditCard, color: 'bg-primary', text: 'text-primary-ink' },
+              { id: PaymentMethod.IDRAM, label: 'Idram QR', icon: Smartphone, color: 'bg-warning', text: 'text-amber-700' },
+              { id: PaymentMethod.TRANSFER, label: 'Փոխանցում քարտին', icon: ArrowRightLeft, color: 'bg-info', text: 'text-sky-700' },
             ].map(method => {
               const data = stats.paymentBreakdown[method.id] || { count: 0, total: 0 };
               const percent = stats.grossVolume > 0 ? Math.round((data.total / stats.grossVolume) * 100) : 0;
@@ -498,13 +488,13 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
                     <div className="flex items-center gap-2">
                       <Icon className="w-3.5 h-3.5 text-slate-500" />
                       <span className="font-bold text-slate-800">{method.label}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">({data.count} հատ)</span>
+                      <span className="text-2xs text-slate-500 font-mono">({data.count} հատ)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-black text-slate-900">
+                      <span className="font-mono font-bold text-slate-900">
                         {data.total.toLocaleString()} ֏
                       </span>
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                      <span className="text-2xs font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                         {percent}%
                       </span>
                     </div>
@@ -522,51 +512,51 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
         </div>
 
         {/* Sale Channels: On-Site vs Delivery vs Pickup */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-sm font-extrabold text-slate-900">
+            <h3 className="text-sm font-bold text-slate-900">
               Վաճառքի Ուղիներ (Sale Channels)
             </h3>
-            <span className="text-xs text-slate-400 font-medium">Տեղում / Առաքում / Խանութ</span>
+            <span className="text-xs text-slate-500 font-medium">Տեղում / Առաքում / Խանութ</span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
-                <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">Տեղում</span>
+                <ShoppingBag className="w-5 h-5 text-primary-ink" />
+                <span className="text-2xs font-bold text-primary-ink bg-indigo-100 px-1.5 py-0.5 rounded">Տեղում</span>
               </div>
               <div>
-                <p className="text-2xl font-black text-indigo-950 font-mono">
+                <p className="text-2xl font-bold text-indigo-950 font-mono">
                   {stats.saleTypeCounts[SaleType.ON_SITE]}
                 </p>
-                <p className="text-[10.5px] text-slate-500 font-medium">Խանութ-սրահից</p>
+                <p className="text-2xs text-slate-500 font-medium">Խանութ-սրահից</p>
               </div>
             </div>
 
             <div className="p-4 bg-sky-50/70 border border-sky-200 rounded-2xl flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
-                <Truck className="w-5 h-5 text-sky-600" />
-                <span className="text-[10px] font-black text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded">Առաքում</span>
+                <Truck className="w-5 h-5 text-sky-700" />
+                <span className="text-2xs font-bold text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded">Առաքում</span>
               </div>
               <div>
-                <p className="text-2xl font-black text-sky-950 font-mono">
+                <p className="text-2xl font-bold text-sky-950 font-mono">
                   {stats.saleTypeCounts[SaleType.DELIVERY]}
                 </p>
-                <p className="text-[10.5px] text-slate-500 font-medium">Հասցեով առաքում</p>
+                <p className="text-2xs text-slate-500 font-medium">Հասցեով առաքում</p>
               </div>
             </div>
 
             <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl flex flex-col justify-between gap-2">
               <div className="flex items-center justify-between">
-                <Store className="w-5 h-5 text-amber-600" />
-                <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Մասնաճյուղ</span>
+                <Store className="w-5 h-5 text-amber-700" />
+                <span className="text-2xs font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Մասնաճյուղ</span>
               </div>
               <div>
-                <p className="text-2xl font-black text-amber-950 font-mono">
+                <p className="text-2xl font-bold text-amber-950 font-mono">
                   {stats.saleTypeCounts[SaleType.PICKUP]}
                 </p>
-                <p className="text-[10.5px] text-slate-500 font-medium">Տեղափոխում</p>
+                <p className="text-2xs text-slate-500 font-medium">Տեղափոխում</p>
               </div>
             </div>
           </div>
@@ -576,19 +566,19 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
       {/* Charts & Popular Items */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart Column (2 Cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="lg:col-span-2 bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900">
                 Պատվերների Դինամիկա (Վերջին 7 օր)
               </h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Ավարտված և ընթացիկ պատվերների քանակն ըստ օրերի
               </p>
             </div>
             <div className="flex items-center gap-4 text-xs font-bold">
-              <div className="flex items-center gap-1.5 text-indigo-600">
-                <span className="w-2.5 h-2.5 rounded-sm bg-indigo-600" />
+              <div className="flex items-center gap-1.5 text-primary-ink">
+                <span className="w-2.5 h-2.5 rounded-sm bg-primary" />
                 <span>Ավարտված</span>
               </div>
               <div className="flex items-center gap-1.5 text-amber-500">
@@ -634,17 +624,17 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
         </div>
 
         {/* Popular Items Column (1 Col) */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <Trophy className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-extrabold text-slate-900">
+            <h3 className="text-sm font-bold text-slate-900">
               Թոփ Պահանջված Ապրանքներ (SKU)
             </h3>
           </div>
 
           <div className="space-y-4 pt-1">
             {stats.popularItems.length === 0 ? (
-              <p className="text-xs text-slate-400 py-8 text-center">Ապրանքների տվյալներ դեռ չկան</p>
+              <p className="text-xs text-slate-500 py-8 text-center">Ապրանքների տվյալներ դեռ չկան</p>
             ) : (
               stats.popularItems.map((item, idx) => {
                 const percentage = Math.round((item.qty / stats.maxQty) * 100);
@@ -658,24 +648,24 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
                             type="button"
                             onClick={() => handleCopySku(item.code!)}
                             title="Սեղմեք պատճենելու համար"
-                            className="font-mono text-[10.5px] font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 shrink-0 inline-flex items-center gap-1 cursor-pointer"
+                            className="font-mono text-2xs font-bold text-primary-ink bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 shrink-0 inline-flex items-center gap-1 cursor-pointer"
                           >
                             <span>{item.code}</span>
-                            {copiedSku === item.code ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5 opacity-50" />}
+                            {copiedSku === item.code ? <Check className="w-2.5 h-2.5 text-emerald-700" /> : <Copy className="w-2.5 h-2.5 opacity-50" />}
                           </button>
                         )}
-                        <span className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 truncate">
-                          {item.code || '---'}
+                        <span className="text-xs font-bold text-slate-800 truncate" title={item.name}>
+                          {item.name}
                         </span>
                       </div>
-                      <span className="font-mono font-extrabold text-slate-900 text-xs shrink-0">
+                      <span className="font-mono font-bold text-slate-900 text-xs shrink-0">
                         {item.qty} հատ
                       </span>
                     </div>
 
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-indigo-600 rounded-full transition-all duration-500" 
+                        className="h-full bg-primary rounded-full transition-all duration-500" 
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
