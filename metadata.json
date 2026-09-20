@@ -1,8 +1,9 @@
 {
   "name": "tab.am",
-  "description": "tab.am - Խանութի պատվերների գրանցում, POS դրամարկղի կտրոնների տպում, առաքումների կառավարում և Google Sheets ավտոմատ սինք",
+  "description": "tab.am - Խանութի պատվերների գրանցում, POS դրամարկղի կտրոնների տպում, առաքումների կառավարում և տեղային JSON բազայի պահպանում",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "camera"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

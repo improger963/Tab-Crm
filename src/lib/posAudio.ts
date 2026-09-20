@@ -96,6 +96,32 @@ class PosAudioService {
     }
   }
 
+  // Cash register / coin drop sound when payment is confirmed
+  public playCashRegisterSound() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // High bell strike + shimmer resonance
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1760, now); // A6
+      osc.frequency.setValueAtTime(2637, now + 0.08); // E7
+      
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } catch {
+      // ignore
+    }
+  }
+
   // Warning tone on error or payment block
   public playErrorBeep() {
     const ctx = this.getContext();

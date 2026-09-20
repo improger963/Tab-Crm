@@ -50,7 +50,12 @@ export default function ViewOrderPage({
 
   const handleCopyAll = () => {
     posAudio.playScanBeep();
-    const itemsText = (order.items || []).map(item => `  - [Կոդ: ${item.code || '---'} | Արտիկուլ: ${item.artikul || '---'}] x${item.quantity} (${(item.quantity * item.price).toLocaleString()} ֏)`).join('\n');
+    const itemsText = (order.items || []).map(item => {
+      const lineTotal = calculateItemLineTotal(item);
+      const discount = calculateItemDiscount(item);
+      const discountNote = discount > 0 ? ` (Զեղչ՝ -${discount.toLocaleString()} ֏)` : '';
+      return `  - [Կոդ: ${item.code || item.artikul || '---'}] ${item.name || ''} x${item.quantity || 1} = ${lineTotal.toLocaleString()} ֏${discountNote}`;
+    }).join('\n');
     const formattedText = `📋 ՊԱՏՎԵՐԱԹԵՐԹ՝ ${order.id}
 🛒 Վաճառքի տեսակ՝ ${order.saleType || SaleType.ON_SITE}
 👤 Հաճախորդ՝ ${order.customerName}

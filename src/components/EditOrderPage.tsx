@@ -13,7 +13,8 @@ import {
   calculateTotalItemDiscounts, 
   calculateItemLineSubtotal, 
   calculateItemDiscount, 
-  calculateItemLineTotal 
+  calculateItemLineTotal,
+  getTodayLocalYMD
 } from '../lib/storage';
 import { posAudio } from '../lib/posAudio';
 
@@ -27,7 +28,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
   const [formData, setFormData] = useState({
     customerName: order.customerName || '',
     phoneNumber: order.phoneNumber || '',
-    purchaseDate: order.purchaseDate || new Date().toISOString().split('T')[0],
+    purchaseDate: order.purchaseDate || getTodayLocalYMD(),
     deliveryDate: order.deliveryDate || '',
     address: order.address || '',
     saleType: order.saleType || SaleType.ON_SITE,

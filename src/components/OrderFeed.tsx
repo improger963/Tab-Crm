@@ -3,82 +3,77 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, Truck, Store, Phone, Copy, Check, 
   Search, ArrowUpDown, ChevronRight, Inbox, Eye, FileText, Calendar,
-  CheckCircle2, Clock, Download, LayoutGrid, List, Sparkles, AlertCircle, Trash2
+  CheckCircle2, Clock, Download, LayoutGrid, List, Sparkles, AlertCircle, Trash2,
+  Printer, X, Filter, Edit3
 } from 'lucide-react';
-import { Order, OrderStatus, PaymentStatus, SaleType } from '../types';
+import { Order, OrderStatus, PaymentStatus, SaleType, PaymentMethod } from '../types';
 import { posAudio } from '../lib/posAudio';
+import { parseDateSafe, toLocalYMD as toYMD, getTodayLocalYMD } from '../lib/storage';
+import { QuickReceiptModal } from './QuickReceiptModal';
 
 interface OrderFeedProps {
   orders: Order[];
   selectedOrderId?: string;
   onSelectOrder: (order: Order) => void;
+  onEditOrder?: (order: Order) => void;
   isLoading?: boolean;
   onResetFilters?: () => void;
   searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
+  statusFilter?: string;
+  setStatusFilter?: (status: string) => void;
   onOpenReportsPage?: () => void;
   onUpdateStatus?: (orderId: string, status: OrderStatus) => void;
   onClearAllOrders?: () => void;
 }
 
-// Helper for robust date parsing in various formats
-export const parseDateSafe = (dateStr: any): Date | null => {
-  if (!dateStr) return null;
-  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
-  const s = String(dateStr).trim();
-  if (!s) return null;
-
-  // 1. Try standard JS parsing
-  const parsed = new Date(s);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
-  }
-
-  // 2. Try DD.MM.YYYY HH:MM:SS or DD.MM.YYYY
-  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1; // Month is 0-indexed in JS Date
-    const year = parseInt(dmyMatch[3], 10);
-    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
-    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
-    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
-
-    const d = new Date(year, month, day, hour, min, sec);
-    if (!isNaN(d.getTime())) {
-      return d;
-    }
-  }
-
-  // 3. Try DD/MM/YYYY
-  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slashMatch) {
-    const day = parseInt(slashMatch[1], 10);
-    const month = parseInt(slashMatch[2], 10) - 1;
-    const year = parseInt(slashMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) {
-      return d;
-    }
-  }
-
-  return null;
-};
-
 export default function OrderFeed({
   orders,
   selectedOrderId,
   onSelectOrder,
+  onEditOrder,
   isLoading,
   onResetFilters,
-  searchQuery = '',
+  searchQuery: parentSearchQuery = '',
+  setSearchQuery: parentSetSearchQuery,
+  statusFilter: parentStatusFilter,
+  setStatusFilter: parentSetStatusFilter,
   onOpenReportsPage,
   onUpdateStatus,
   onClearAllOrders
 }: OrderFeedProps) {
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'id-asc' | 'id-desc'>('date-desc');
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
+  // Smart Filters State
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom'>('all');
+  const [customDate, setCustomDate] = useState<string>('');
+  const [localStatusFilter, setLocalStatusFilter] = useState<string>('Բոլորը');
+  const [saleTypeFilter, setSaleTypeFilter] = useState<'all' | 'delivery' | 'onsite' | 'pickup'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid' | 'partial'>('all');
+  const [internalSearch, setInternalSearch] = useState<string>('');
+  
+  // Quick receipt modal
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+
+  // Sync status filter between parent and local state
+  const effectiveStatusFilter = parentStatusFilter ?? localStatusFilter;
+  const setEffectiveStatusFilter = (val: string) => {
+    setLocalStatusFilter(val);
+    if (parentSetStatusFilter) {
+      parentSetStatusFilter(val);
+    }
+  };
+
+  // Sync search query between parent and local state
+  const effectiveSearchQuery = parentSearchQuery || internalSearch;
+  const setEffectiveSearchQuery = (val: string) => {
+    setInternalSearch(val);
+    if (parentSetSearchQuery) {
+      parentSetSearchQuery(val);
+    }
+  };
 
   const handleCopy = (text: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -203,51 +198,165 @@ export default function OrderFeed({
     }
   };
 
-  // Date filtering logic
-  const filteredByDateOrders = useMemo(() => {
-    if (dateFilter === 'all') return orders;
+  // Calculations for quick KPI metric cards
+  const statsOverview = useMemo(() => {
+    const totalCount = orders.length;
+    const totalSum = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const inTransitOrders = orders.filter(o => o.status === OrderStatus.IN_TRANSIT || o.status.includes('Առաքման'));
+    const inTransitSum = inTransitOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
+    const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING || o.status.includes('Սպասում'));
+    const pendingSum = pendingOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
+    const soldOrders = orders.filter(o => o.status === OrderStatus.SOLD || o.status.includes('Վաճառված'));
+    const soldSum = soldOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
+    const deliveredOrders = orders.filter(o => o.status === OrderStatus.DELIVERED || o.status.includes('Ավարտված'));
+    const deliveredSum = deliveredOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
+
+    // Today count
+    const todayYMD = toYMD(new Date());
+    const todayCount = orders.filter(o => {
+      const d = parseDateSafe(o.purchaseDate);
+      return d && toYMD(d) === todayYMD;
+    }).length;
+
+    // Yesterday count
+    const yest = new Date();
+    yest.setDate(yest.getDate() - 1);
+    const yestYMD = toYMD(yest);
+    const yestCount = orders.filter(o => {
+      const d = parseDateSafe(o.purchaseDate);
+      return d && toYMD(d) === yestYMD;
+    }).length;
+
+    return {
+      totalCount,
+      totalSum,
+      inTransitCount: inTransitOrders.length,
+      inTransitSum,
+      pendingCount: pendingOrders.length,
+      pendingSum,
+      soldCount: soldOrders.length,
+      soldSum,
+      deliveredCount: deliveredOrders.length,
+      deliveredSum,
+      todayCount,
+      yestCount
+    };
+  }, [orders]);
+
+  // Master Filter Pipeline
+  const filteredOrders = useMemo(() => {
+    const todayYMD = toYMD(new Date());
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayYMD = toYMD(yesterday);
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    weekAgo.setHours(0, 0, 0, 0);
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const rawSearch = effectiveSearchQuery.trim();
+    const searchLower = rawSearch.toLowerCase();
+    const searchDigits = rawSearch.replace(/\D/g, '');
 
     return orders.filter(order => {
+      // 1. Date filter
       const parsedDate = parseDateSafe(order.purchaseDate);
-      if (!parsedDate) return false;
+      if (dateFilter !== 'all') {
+        if (!parsedDate) return false;
+        const orderYMD = toYMD(parsedDate);
 
-      const dateStrYMD = parsedDate.toISOString().split('T')[0];
+        if (dateFilter === 'today' && orderYMD !== todayYMD) return false;
+        if (dateFilter === 'yesterday' && orderYMD !== yesterdayYMD) return false;
+        if (dateFilter === 'week' && parsedDate.getTime() < weekAgo.getTime()) return false;
+        if (dateFilter === 'month' && (parsedDate.getFullYear() !== currentYear || parsedDate.getMonth() !== currentMonth)) return false;
+        if (dateFilter === 'custom' && customDate && orderYMD !== customDate) return false;
+      }
 
-      if (dateFilter === 'today') {
-        return dateStrYMD === todayStr;
+      // 2. Status Filter
+      if (effectiveStatusFilter && effectiveStatusFilter !== 'Բոլորը') {
+        if (effectiveStatusFilter === 'Սպասում է դրամարկղին' || effectiveStatusFilter === 'Սպասում է կասային') {
+          if (order.status !== OrderStatus.PENDING && !order.status.includes('Սպասում')) return false;
+        } else if (effectiveStatusFilter === 'Վաճառված (POS)' || effectiveStatusFilter === 'Վաճառված (ArmSoft)') {
+          if (order.status !== OrderStatus.SOLD && !order.status.includes('Վաճառված')) return false;
+        } else if (effectiveStatusFilter === 'Առաքման մեջ' || effectiveStatusFilter === 'Ընթացքի մեջ') {
+          if (order.status !== OrderStatus.IN_TRANSIT && !order.status.includes('Առաքման') && !order.status.includes('Ընթացք')) return false;
+        } else if (effectiveStatusFilter === 'Ավարտված') {
+          if (order.status !== OrderStatus.DELIVERED && !order.status.includes('Ավարտված') && !order.status.includes('Հանձնված')) return false;
+        } else if (effectiveStatusFilter === 'Չեղարկված') {
+          if (order.status !== OrderStatus.CANCELLED && !order.status.includes('Չեղարկ')) return false;
+        } else if (order.status !== effectiveStatusFilter) {
+          return false;
+        }
       }
-      if (dateFilter === 'yesterday') {
-        return dateStrYMD === yesterdayStr;
+
+      // 3. Sale Type Filter
+      if (saleTypeFilter !== 'all') {
+        if (saleTypeFilter === 'delivery' && order.saleType !== SaleType.DELIVERY) return false;
+        if (saleTypeFilter === 'onsite' && order.saleType !== SaleType.ON_SITE && order.saleType) return false;
+        if (saleTypeFilter === 'pickup' && order.saleType !== SaleType.PICKUP) return false;
       }
-      if (dateFilter === 'week') {
-        return parsedDate.getTime() >= weekAgo.getTime();
+
+      // 4. Payment Filter
+      if (paymentFilter !== 'all') {
+        if (paymentFilter === 'paid' && order.paymentStatus !== PaymentStatus.PAID) return false;
+        if (paymentFilter === 'unpaid' && order.paymentStatus !== PaymentStatus.UNPAID) return false;
+        if (paymentFilter === 'partial' && order.paymentStatus !== PaymentStatus.PARTIAL) return false;
       }
+
+      // 5. Search Query Filter
+      if (rawSearch) {
+        const orderPhoneDigits = (order.phoneNumber || '').replace(/\D/g, '');
+        const itemCodesMatch = (order.items || []).some(item => 
+          (item.code && item.code.toLowerCase().includes(searchLower)) ||
+          (item.artikul && item.artikul.toLowerCase().includes(searchLower)) ||
+          (item.name && item.name.toLowerCase().includes(searchLower))
+        );
+
+        const matches = 
+          order.id.toLowerCase().includes(searchLower) ||
+          (order.customerName && order.customerName.toLowerCase().includes(searchLower)) ||
+          (order.phoneNumber && order.phoneNumber.toLowerCase().includes(searchLower)) ||
+          (searchDigits.length > 0 && orderPhoneDigits.includes(searchDigits)) ||
+          (order.address && order.address.toLowerCase().includes(searchLower)) ||
+          itemCodesMatch;
+
+        if (!matches) return false;
+      }
+
       return true;
     });
-  }, [orders, dateFilter]);
+  }, [orders, dateFilter, customDate, effectiveStatusFilter, saleTypeFilter, paymentFilter, effectiveSearchQuery]);
 
   // Sort orders
   const sortedOrders = useMemo(() => {
-    return [...filteredByDateOrders].sort((a, b) => {
+    return [...filteredOrders].sort((a, b) => {
       if (sortBy === 'amount-desc') return (b.totalAmount || 0) - (a.totalAmount || 0);
       if (sortBy === 'amount-asc') return (a.totalAmount || 0) - (b.totalAmount || 0);
       if (sortBy === 'date-asc') {
         const dA = parseDateSafe(a.purchaseDate);
         const dB = parseDateSafe(b.purchaseDate);
-        return (dA?.getTime() || 0) - (dB?.getTime() || 0);
+        const diff = (dA?.getTime() || 0) - (dB?.getTime() || 0);
+        if (diff !== 0) return diff;
+        const numA = parseInt((a.id || '').replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt((b.id || '').replace(/\D/g, ''), 10) || 0;
+        return numA - numB;
       }
       if (sortBy === 'date-desc') {
         const dA = parseDateSafe(a.purchaseDate);
         const dB = parseDateSafe(b.purchaseDate);
-        return (dB?.getTime() || 0) - (dA?.getTime() || 0);
+        const diff = (dB?.getTime() || 0) - (dA?.getTime() || 0);
+        if (diff !== 0) return diff;
+        const numA = parseInt((a.id || '').replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt((b.id || '').replace(/\D/g, ''), 10) || 0;
+        return numB - numA;
       }
       if (sortBy === 'id-asc') {
         const numA = parseInt((a.id || '').replace(/\D/g, ''), 10) || 0;
@@ -261,9 +370,30 @@ export default function OrderFeed({
       }
       return 0;
     });
-  }, [filteredByDateOrders, sortBy]);
+  }, [filteredOrders, sortBy]);
 
   const totalSum = sortedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+  const hasActiveFilters = 
+    dateFilter !== 'all' || 
+    customDate !== '' ||
+    effectiveStatusFilter !== 'Բոլորը' || 
+    saleTypeFilter !== 'all' || 
+    paymentFilter !== 'all' || 
+    effectiveSearchQuery.trim() !== '';
+
+  const handleResetAllFilters = () => {
+    posAudio.playScanBeep();
+    setDateFilter('all');
+    setCustomDate('');
+    setEffectiveStatusFilter('Բոլորը');
+    setSaleTypeFilter('all');
+    setPaymentFilter('all');
+    setEffectiveSearchQuery('');
+    if (onResetFilters) {
+      onResetFilters();
+    }
+  };
 
   // Export orders to CSV for POS / Excel
   const handleExportCSV = () => {
@@ -271,7 +401,7 @@ export default function OrderFeed({
     const headers = ['ID', 'Customer', 'Phone', 'SaleType', 'Status', 'PaymentStatus', 'PaymentMethod', 'Amount', 'Date', 'SKUs'];
     const rows = sortedOrders.map(o => [
       o.id,
-      `"${o.customerName.replace(/"/g, '""')}"`,
+      `"${(o.customerName || '').replace(/"/g, '""')}"`,
       `"${o.phoneNumber || ''}"`,
       `"${o.saleType || ''}"`,
       `"${o.status}"`,
@@ -279,32 +409,30 @@ export default function OrderFeed({
       `"${o.paymentMethod || ''}"`,
       o.totalAmount || 0,
       o.purchaseDate,
-      `"${(o.items || []).map(i => i.code).filter(Boolean).join('; ')}"`
+      `"${(o.items || []).map(i => i.code || i.artikul).filter(Boolean).join('; ')}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `pos_orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `pos_orders_${getTodayLocalYMD()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Quick filter by SKU
   const handleQuickSkuFilter = (sku: string, e: React.MouseEvent) => {
     e.stopPropagation();
     posAudio.playScanBeep();
-    if (searchQuery === sku) {
-      // already filtered
+    if (effectiveSearchQuery === sku) {
+      setEffectiveSearchQuery('');
       return;
     }
-    const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-    if (searchInput) {
-      searchInput.value = sku;
-      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    setEffectiveSearchQuery(sku);
   };
 
   // 1-Click quick advance status for cashiers
@@ -328,38 +456,193 @@ export default function OrderFeed({
 
   return (
     <div className="h-full flex flex-col space-y-4">
-      {/* Interactive Quick Summary & Controls Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-white px-3.5 sm:px-5 py-3 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs">
-        
-        {/* Left: Counts, Live Date Filters, and Amount */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-xs font-extrabold text-slate-700">Պատվերներ՝</span>
-            <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-black px-2 py-0.5 rounded-lg font-mono text-xs">
-              {sortedOrders.length}
+      {/* Top 5 Smart KPI Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        {/* All Orders */}
+        <button
+          onClick={() => {
+            posAudio.playScanBeep();
+            setEffectiveStatusFilter('Բոլորը');
+            setDateFilter('all');
+            setCustomDate('');
+          }}
+          className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+            effectiveStatusFilter === 'Բոլորը' && dateFilter === 'all'
+              ? 'bg-indigo-600 text-white border-indigo-700 shadow-md ring-2 ring-indigo-300'
+              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/90 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-[11px] font-extrabold uppercase tracking-wide ${
+              effectiveStatusFilter === 'Բոլորը' && dateFilter === 'all' ? 'text-indigo-100' : 'text-slate-500'
+            }`}>
+              Ընդհանուր
+            </span>
+            <span className={`h-2 w-2 rounded-full ${
+              effectiveStatusFilter === 'Բոլորը' && dateFilter === 'all' ? 'bg-white' : 'bg-indigo-500'
+            }`} />
+          </div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xl sm:text-2xl font-black font-mono">
+              {statsOverview.totalCount}
+            </span>
+            <span className={`text-xs font-bold font-mono truncate ${
+              effectiveStatusFilter === 'Բոլորը' && dateFilter === 'all' ? 'text-indigo-100' : 'text-slate-600'
+            }`}>
+              {statsOverview.totalSum.toLocaleString()} ֏
             </span>
           </div>
+        </button>
 
-          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+        {/* In Transit */}
+        <button
+          onClick={() => {
+            posAudio.playScanBeep();
+            setEffectiveStatusFilter(OrderStatus.IN_TRANSIT);
+          }}
+          className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+            effectiveStatusFilter === OrderStatus.IN_TRANSIT || effectiveStatusFilter === 'Առաքման մեջ'
+              ? 'bg-sky-600 text-white border-sky-700 shadow-md ring-2 ring-sky-300'
+              : 'bg-white hover:bg-sky-50/50 text-slate-800 border-slate-200/90 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1 ${
+              effectiveStatusFilter === OrderStatus.IN_TRANSIT || effectiveStatusFilter === 'Առաքման մեջ' ? 'text-sky-100' : 'text-sky-700'
+            }`}>
+              <Truck className="w-3 h-3" />
+              <span>Առաքման մեջ</span>
+            </span>
+            <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
+          </div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xl sm:text-2xl font-black font-mono text-sky-900">
+              {statsOverview.inTransitCount}
+            </span>
+            <span className="text-xs font-bold font-mono text-sky-700 truncate">
+              {statsOverview.inTransitSum.toLocaleString()} ֏
+            </span>
+          </div>
+        </button>
 
-          {/* Date Filter Pills */}
-          <div className="flex items-center gap-1 bg-slate-100/80 p-0.5 sm:p-1 rounded-xl border border-slate-200/70 text-[11px] overflow-x-auto no-scrollbar">
+        {/* Pending Cashier / POS */}
+        <button
+          onClick={() => {
+            posAudio.playScanBeep();
+            setEffectiveStatusFilter(OrderStatus.PENDING);
+          }}
+          className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+            effectiveStatusFilter === OrderStatus.PENDING || effectiveStatusFilter.includes('Սպասում')
+              ? 'bg-amber-500 text-white border-amber-600 shadow-md ring-2 ring-amber-300'
+              : 'bg-white hover:bg-amber-50/50 text-slate-800 border-slate-200/90 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1 ${
+              effectiveStatusFilter === OrderStatus.PENDING || effectiveStatusFilter.includes('Սպասում') ? 'text-amber-100' : 'text-amber-700'
+            }`}>
+              <Clock className="w-3 h-3" />
+              <span>Սպասում է</span>
+            </span>
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+          </div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xl sm:text-2xl font-black font-mono text-amber-900">
+              {statsOverview.pendingCount}
+            </span>
+            <span className="text-xs font-bold font-mono text-amber-700 truncate">
+              {statsOverview.pendingSum.toLocaleString()} ֏
+            </span>
+          </div>
+        </button>
+
+        {/* Sold / POS */}
+        <button
+          onClick={() => {
+            posAudio.playScanBeep();
+            setEffectiveStatusFilter(OrderStatus.SOLD);
+          }}
+          className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+            effectiveStatusFilter === OrderStatus.SOLD || effectiveStatusFilter.includes('Վաճառված')
+              ? 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-300'
+              : 'bg-white hover:bg-blue-50/50 text-slate-800 border-slate-200/90 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1 ${
+              effectiveStatusFilter === OrderStatus.SOLD || effectiveStatusFilter.includes('Վաճառված') ? 'text-blue-100' : 'text-blue-700'
+            }`}>
+              <ShoppingBag className="w-3 h-3" />
+              <span>Վաճառված</span>
+            </span>
+            <span className="h-2 w-2 rounded-full bg-blue-500" />
+          </div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xl sm:text-2xl font-black font-mono text-blue-900">
+              {statsOverview.soldCount}
+            </span>
+            <span className="text-xs font-bold font-mono text-blue-700 truncate">
+              {statsOverview.soldSum.toLocaleString()} ֏
+            </span>
+          </div>
+        </button>
+
+        {/* Delivered / Completed */}
+        <button
+          onClick={() => {
+            posAudio.playScanBeep();
+            setEffectiveStatusFilter(OrderStatus.DELIVERED);
+          }}
+          className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+            effectiveStatusFilter === OrderStatus.DELIVERED || effectiveStatusFilter.includes('Ավարտված')
+              ? 'bg-emerald-600 text-white border-emerald-700 shadow-md ring-2 ring-emerald-300'
+              : 'bg-white hover:bg-emerald-50/50 text-slate-800 border-slate-200/90 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1 ${
+              effectiveStatusFilter === OrderStatus.DELIVERED || effectiveStatusFilter.includes('Ավարտված') ? 'text-emerald-100' : 'text-emerald-700'
+            }`}>
+              <CheckCircle2 className="w-3 h-3" />
+              <span>Ավարտված</span>
+            </span>
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          </div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xl sm:text-2xl font-black font-mono text-emerald-900">
+              {statsOverview.deliveredCount}
+            </span>
+            <span className="text-xs font-bold font-mono text-emerald-700 truncate">
+              {statsOverview.deliveredSum.toLocaleString()} ֏
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* Smart Filters and Search Toolbar */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
+        {/* Row 1: Date Pills & Calendar Picker */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Quick Date Pills */}
+          <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 text-xs overflow-x-auto no-scrollbar">
             {[
-              { id: 'all', label: 'Բոլորը' },
-              { id: 'today', label: 'Այսօր' },
-              { id: 'yesterday', label: 'Երեկ' },
+              { id: 'all', label: 'Բոլոր օրերը' },
+              { id: 'today', label: `Այսօր (${statsOverview.todayCount})` },
+              { id: 'yesterday', label: `Երեկ (${statsOverview.yestCount})` },
               { id: 'week', label: '7 օր' },
+              { id: 'month', label: 'Այս ամիս' },
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => {
                   posAudio.playScanBeep();
                   setDateFilter(tab.id as any);
+                  setCustomDate('');
                 }}
-                className={`px-2.5 sm:px-3 py-1 rounded-lg font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap text-xs ${
                   dateFilter === tab.id 
-                    ? 'bg-white text-indigo-900 shadow-2xs' 
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-white text-indigo-900 shadow-2xs font-black' 
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {tab.label}
@@ -367,10 +650,197 @@ export default function OrderFeed({
             ))}
           </div>
 
-          <div className="h-4 w-px bg-slate-200 hidden md:block" />
+          {/* Calendar Custom Date Picker */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex items-center">
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => {
+                  posAudio.playScanBeep();
+                  setCustomDate(e.target.value);
+                  setDateFilter('custom');
+                }}
+                className={`text-xs font-bold text-slate-700 bg-slate-50 border rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+                  dateFilter === 'custom' && customDate 
+                    ? 'border-indigo-500 bg-indigo-50/50 text-indigo-950 font-black' 
+                    : 'border-slate-200'
+                }`}
+                title="Ընտրել կոնկրետ օր"
+              />
+              {dateFilter === 'custom' && customDate && (
+                <button
+                  onClick={() => {
+                    posAudio.playScanBeep();
+                    setCustomDate('');
+                    setDateFilter('all');
+                  }}
+                  className="ml-1 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title="Մաքրել օրացույցը"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span>Ընդհանուր գումար՝</span>
+        {/* Row 2: Status, Sale Type, Payment Dropdowns + Live Search Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-slate-100">
+          {/* Status Select */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+            <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Կարգավիճակ՝</span>
+            <select
+              value={effectiveStatusFilter}
+              onChange={(e) => {
+                posAudio.playScanBeep();
+                setEffectiveStatusFilter(e.target.value);
+              }}
+              className="w-full text-xs font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+            >
+              <option value="Բոլորը">Բոլոր կարգավիճակները</option>
+              <option value={OrderStatus.PENDING}>Սպասում է դրամարկղին</option>
+              <option value={OrderStatus.SOLD}>Վաճառված (POS)</option>
+              <option value={OrderStatus.IN_TRANSIT}>Առաքման մեջ</option>
+              <option value={OrderStatus.DELIVERED}>Ավարտված / Հանձնված</option>
+              <option value={OrderStatus.CANCELLED}>Չեղարկված</option>
+            </select>
+          </div>
+
+          {/* Sale Type Select */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+            <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Տեսակ՝</span>
+            <select
+              value={saleTypeFilter}
+              onChange={(e) => {
+                posAudio.playScanBeep();
+                setSaleTypeFilter(e.target.value as any);
+              }}
+              className="w-full text-xs font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+            >
+              <option value="all">Բոլոր տեսակները</option>
+              <option value="delivery">🚚 Առաքում (Delivery)</option>
+              <option value="onsite">🛍️ Խանութում (On-site)</option>
+              <option value="pickup">🏬 Մոտեցնել խանութ (Pickup)</option>
+            </select>
+          </div>
+
+          {/* Payment Status Select */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+            <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Վճարում՝</span>
+            <select
+              value={paymentFilter}
+              onChange={(e) => {
+                posAudio.playScanBeep();
+                setPaymentFilter(e.target.value as any);
+              }}
+              className="w-full text-xs font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+            >
+              <option value="all">Բոլոր վճարումները</option>
+              <option value="paid">✅ Վճարված</option>
+              <option value="unpaid">❌ Չվճարված</option>
+              <option value="partial">⏳ Մասնակի</option>
+            </select>
+          </div>
+
+          {/* Search Input with Instant Clear */}
+          <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
+            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0 mr-1.5" />
+            <input
+              type="text"
+              value={effectiveSearchQuery}
+              onChange={(e) => setEffectiveSearchQuery(e.target.value)}
+              placeholder="Փնտրել ID, հեռախոս, անուն, հասցե, SKU..."
+              className="w-full text-xs font-bold text-slate-800 bg-transparent focus:outline-none placeholder-slate-400"
+            />
+            {effectiveSearchQuery && (
+              <button
+                onClick={() => {
+                  posAudio.playScanBeep();
+                  setEffectiveSearchQuery('');
+                }}
+                className="p-0.5 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                title="Մաքրել որոնումը"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Active Filters Bar & Reset All Action */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-extrabold text-slate-500">Ակտիվ զտիչներ՝</span>
+              {dateFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-lg font-bold text-[11px]">
+                  <span>📅 {dateFilter === 'custom' ? customDate : dateFilter}</span>
+                  <button onClick={() => { setDateFilter('all'); setCustomDate(''); }} className="hover:text-indigo-900 cursor-pointer">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {effectiveStatusFilter !== 'Բոլորը' && (
+                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-lg font-bold text-[11px]">
+                  <span>🏷️ {effectiveStatusFilter}</span>
+                  <button onClick={() => setEffectiveStatusFilter('Բոլորը')} className="hover:text-amber-900 cursor-pointer">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {saleTypeFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-lg font-bold text-[11px]">
+                  <span>📦 {saleTypeFilter === 'delivery' ? 'Առաքում' : saleTypeFilter === 'onsite' ? 'Խանութում' : 'Մոտեցնել'}</span>
+                  <button onClick={() => setSaleTypeFilter('all')} className="hover:text-sky-900 cursor-pointer">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {paymentFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-[11px]">
+                  <span>💳 {paymentFilter === 'paid' ? 'Վճարված' : paymentFilter === 'unpaid' ? 'Չվճարված' : 'Մասնակի'}</span>
+                  <button onClick={() => setPaymentFilter('all')} className="hover:text-emerald-900 cursor-pointer">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {effectiveSearchQuery && (
+                <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-lg font-bold text-[11px]">
+                  <span>🔍 "{effectiveSearchQuery}"</span>
+                  <button onClick={() => setEffectiveSearchQuery('')} className="hover:text-purple-900 cursor-pointer">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={handleResetAllFilters}
+              className="text-xs font-black text-rose-600 hover:text-rose-700 underline cursor-pointer"
+            >
+              Մաքրել բոլոր զտիչները
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Sub-bar: Results count, View Mode, Sort & Export */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-white px-3.5 sm:px-5 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs">
+        
+        {/* Left: Filtered count & Total Sum */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xs font-extrabold text-slate-700">Արդյունքներ՝</span>
+            <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-black px-2 py-0.5 rounded-lg font-mono text-xs">
+              {sortedOrders.length}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-200" />
+
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+            <span>Գումար՝</span>
             <span className="font-black text-slate-900 font-mono bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200">
               {totalSum.toLocaleString()} ֏
             </span>
@@ -567,17 +1037,17 @@ export default function OrderFeed({
                                     <div className="flex items-center gap-1 mt-0.5">
                                       <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                                       <span className={`text-[11px] font-mono font-medium ${
-                                        isPhoneMatch(order.phoneNumber || '', searchQuery)
+                                        isPhoneMatch(order.phoneNumber || '', effectiveSearchQuery)
                                           ? 'bg-amber-100 text-amber-900 font-black px-1 rounded'
                                           : 'text-slate-500'
                                       }`}>
                                         {order.phoneNumber || '---'}
                                       </span>
                                     </div>
-                                    {order.saleType === SaleType.DELIVERY && order.deliveryAddress && (
-                                      <p className="text-[10.5px] text-slate-400 truncate mt-0.5 flex items-center gap-1">
+                                    {order.saleType === SaleType.DELIVERY && order.address && (
+                                      <p className="text-[10.5px] text-slate-500 truncate mt-0.5 flex items-center gap-1">
                                         <span>📍</span>
-                                        <span>{order.deliveryAddress}</span>
+                                        <span>{highlightMatch(order.address, effectiveSearchQuery)}</span>
                                       </p>
                                     )}
                                   </div>
@@ -682,12 +1152,64 @@ export default function OrderFeed({
                                       <span>Հաստատել POS</span>
                                     </button>
                                   )}
+                                  {onUpdateStatus && order.status === OrderStatus.SOLD && order.saleType === SaleType.DELIVERY && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleQuickAdvanceStatus(e, order)}
+                                      className="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-black shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                                      title="Փոխանցել առաքիչին"
+                                    >
+                                      <Truck className="w-2.5 h-2.5" />
+                                      <span>Տալ առաքիչին</span>
+                                    </button>
+                                  )}
+                                  {onUpdateStatus && order.status === OrderStatus.IN_TRANSIT && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleQuickAdvanceStatus(e, order)}
+                                      className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                                      title="Նշել որպես առաքված"
+                                    >
+                                      <CheckCircle2 className="w-2.5 h-2.5" />
+                                      <span>Հանձնված է</span>
+                                    </button>
+                                  )}
                                 </div>
                               </td>
 
                               {/* Actions */}
                               <td className="pl-4 pr-6 py-4 align-top text-right">
-                                <div className="inline-flex items-center gap-1.5">
+                                <div className="inline-flex items-center gap-1">
+                                  {/* Quick Receipt Print */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      posAudio.playScanBeep();
+                                      setReceiptOrder(order);
+                                    }}
+                                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200/80 rounded-xl transition-all shadow-2xs active:scale-95 cursor-pointer"
+                                    title="Տպել / Դիտել Արագ Կտրոն"
+                                  >
+                                    <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                                  </button>
+
+                                  {/* Edit Order */}
+                                  {onEditOrder && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        posAudio.playScanBeep();
+                                        onEditOrder(order);
+                                      }}
+                                      className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 border border-slate-200/80 rounded-xl transition-all shadow-2xs active:scale-95 cursor-pointer"
+                                      title="Խմբագրել պատվերը"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                                    </button>
+                                  )}
+
                                   {onOpenReportsPage && (
                                     <button
                                       type="button"
@@ -863,6 +1385,71 @@ export default function OrderFeed({
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          {/* Quick Advance Status in Grid */}
+                          {onUpdateStatus && order.status === OrderStatus.PENDING && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleQuickAdvanceStatus(e, order)}
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10.5px] font-black shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              title="Արագ հաստատել POS վաճառքը"
+                            >
+                              <Check className="w-3 h-3 stroke-[3]" />
+                              <span>Հաստատել POS</span>
+                            </button>
+                          )}
+                          {onUpdateStatus && order.status === OrderStatus.SOLD && order.saleType === SaleType.DELIVERY && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleQuickAdvanceStatus(e, order)}
+                              className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-[10.5px] font-black shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              title="Փոխանցել առաքիչին"
+                            >
+                              <Truck className="w-3 h-3" />
+                              <span>Առաքիչին</span>
+                            </button>
+                          )}
+                          {onUpdateStatus && order.status === OrderStatus.IN_TRANSIT && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleQuickAdvanceStatus(e, order)}
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10.5px] font-black shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              title="Նշել որպես առաքված"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Հանձնված է</span>
+                            </button>
+                          )}
+
+                          {/* Quick Receipt Print */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              posAudio.playScanBeep();
+                              setReceiptOrder(order);
+                            }}
+                            className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-slate-200 cursor-pointer shadow-2xs active:scale-95"
+                            title="Տպել / Դիտել Արագ Կտրոն"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                          </button>
+
+                          {/* Edit Order */}
+                          {onEditOrder && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                posAudio.playScanBeep();
+                                onEditOrder(order);
+                              }}
+                              className="p-2 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-slate-200 cursor-pointer shadow-2xs active:scale-95"
+                              title="Խմբագրել պատվերը"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                            </button>
+                          )}
+
                           {onOpenReportsPage && (
                             <button
                               type="button"
@@ -889,6 +1476,13 @@ export default function OrderFeed({
           </AnimatePresence>
         </div>
       )}
+
+      {/* Instant POS Thermal Receipt Modal */}
+      <QuickReceiptModal
+        order={receiptOrder}
+        isOpen={!!receiptOrder}
+        onClose={() => setReceiptOrder(null)}
+      />
     </div>
   );
 }

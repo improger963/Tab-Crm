@@ -4,6 +4,68 @@ const STORAGE_KEYS = {
   ORDERS: 'crm_orders',
 };
 
+export const toLocalYMD = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const getTodayLocalYMD = (): string => {
+  return toLocalYMD(new Date());
+};
+
+export const parseDateSafe = (dateStr: any): Date | null => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const s = String(dateStr).trim();
+  if (!s) return null;
+
+  // 1. Direct YYYY-MM-DD (with optional time)
+  const ymdMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const hour = ymdMatch[4] ? parseInt(ymdMatch[4], 10) : 0;
+    const min = ymdMatch[5] ? parseInt(ymdMatch[5], 10) : 0;
+    const sec = ymdMatch[6] ? parseInt(ymdMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 2. Direct DD.MM.YYYY
+  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 3. Direct DD/MM/YYYY
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10) - 1;
+    const year = parseInt(slashMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 4. Fallback standard Date constructor
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return null;
+};
+
 export const calculateItemLineSubtotal = (item: OrderItem): number => {
   return (item.quantity || 0) * (item.price || 0);
 };
@@ -38,6 +100,62 @@ export const calculateOrderTotal = (items: OrderItem[]): number => {
 };
 
 const MOCK_ORDERS: Order[] = [];
+
+export const getDemoOrders = (): Order[] => {
+  const today = getTodayLocalYMD();
+  return [
+    {
+      id: '1001',
+      customerName: 'Արմեն Կարապետյան',
+      phoneNumber: '+374 91 123456',
+      purchaseDate: today,
+      deliveryDate: today,
+      address: 'Երևան, Թումանյան 12, բն. 4',
+      status: OrderStatus.PENDING,
+      paymentStatus: PaymentStatus.PAID,
+      saleType: SaleType.DELIVERY,
+      salesRep: 'Սրահի աշխատակից',
+      cashierNote: 'Առաքել մինչև ժամը 18:00',
+      items: [
+        { id: 'item-1', code: '1001', artikul: 'ART-1001', name: 'Օդորակիչ Smart Inverter', quantity: 1, price: 185000, discount: 5000, discountType: 'FIXED' }
+      ],
+      totalAmount: 180000,
+      notes: 'Արագ առաքում',
+      latitude: 40.1792,
+      longitude: 44.4991,
+      statusHistory: [],
+      events: []
+    },
+    {
+      id: '1002',
+      customerName: 'Աննա Հակոբյան',
+      phoneNumber: '+374 98 654321',
+      purchaseDate: today,
+      deliveryDate: today,
+      address: 'Երևան, Կոմիտաս 35',
+      status: OrderStatus.DELIVERED,
+      paymentStatus: PaymentStatus.PAID,
+      saleType: SaleType.ON_SITE,
+      salesRep: 'Սրահի աշխատակից',
+      cashierNote: 'Վճարվել է կանխիկ',
+      items: [
+        { id: 'item-2', code: '2004', artikul: 'ART-2004', name: 'Էլեկտրական Թեյնիկ Bosch', quantity: 2, price: 24000, discount: 0 }
+      ],
+      totalAmount: 48000,
+      notes: 'Տեղում վաճառք',
+      latitude: 40.2012,
+      longitude: 44.5123,
+      statusHistory: [],
+      events: []
+    }
+  ];
+};
+
+export const resetToDemoOrders = () => {
+  const demos = getDemoOrders();
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(demos));
+  return { orders: demos, clients: [] };
+};
 
 export const clearAllOrders = () => {
   localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));

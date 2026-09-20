@@ -29,7 +29,11 @@ import {
   Trash2,
   Settings,
   FileText,
-  Key
+  Key,
+  Database,
+  FileJson,
+  Download,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -43,22 +47,19 @@ import BarcodeScannerModal from './components/BarcodeScannerModal';
 import DeliveryDashboard from './components/DeliveryDashboard';
 import { ToastContainer, useToast } from './components/Toast';
 import { posAudio } from './lib/posAudio';
+import { JsonDatabasePage } from './components/JsonDatabasePage';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { MobileNav } from './components/MobileNav';
+import { NotificationCenter } from './components/NotificationCenter';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 // Types & Libs
 import { Order, OrderStatus, PaymentStatus, SaleType } from './types';
-import { getStoredData, saveOrder, updateOrder, deleteOrder, clearAllOrders } from './lib/storage';
-import { initAuth, googleSignIn, logout, clearCachedToken, connectWithDirectToken } from './lib/firebase';
-import { 
-  listSpreadsheets, 
-  createSpreadsheet, 
-  readOrdersFromSheet, 
-  overwriteAllOrdersInSheet, 
-  getFirstSheetTitle,
-  addOrderToSheet,
-  updateOrderInSheet
-} from './lib/sheetsService';
+import { getStoredData, saveOrder, updateOrder, deleteOrder, clearAllOrders, resetToDemoOrders } from './lib/storage';
+import { downloadOrdersAsJsonFile } from './lib/jsonStorage';
 
-type View = 'dashboard' | 'orders' | 'create-order' | 'view-order' | 'edit-order' | 'google-sheets' | 'reports';
+type View = 'dashboard' | 'orders' | 'create-order' | 'view-order' | 'edit-order' | 'json-database' | 'reports';
 
 
 export interface InAppNotification {
@@ -74,6 +75,9 @@ export interface InAppNotification {
 export default function App() {
   const [activeView, setActiveView] = useState<View>('orders');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('tab_pos_sidebar_collapsed') === 'true';
+  });
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,285 +92,6 @@ export default function App() {
   }, [orders, currentOrderId]);
   
   const { toasts, addToast, removeToast } = useToast();
-
-  // Google Sheets integration state values
-  const [googleUser, setGoogleUser] = useState<any>(() => {
-    if (localStorage.getItem('is_direct_apps_script') === 'true') {
-      return { email: 'apps.script@direct', displayName: 'Direct Sheet (Apps Script)' };
-    }
-    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
-      return { email: 'api@direct.google', displayName: 'Google API (Auto-Refresh)' };
-    }
-    return null;
-  });
-  const [googleToken, setGoogleToken] = useState<string>(() => {
-    if (localStorage.getItem('is_direct_apps_script') === 'true') {
-      return 'direct_apps_script';
-    }
-    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
-      return localStorage.getItem('google_access_token') || 'temp_refreshing';
-    }
-    return '';
-  });
-  const [spreadsheets, setSpreadsheets] = useState<{ id: string; name: string }[]>([]);
-  const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string>(() => {
-    return localStorage.getItem('logiconnect_spreadsheet_id') || '';
-  });
-  const [selectedSpreadsheetName, setSelectedSpreadsheetName] = useState<string>(() => {
-    return localStorage.getItem('logiconnect_spreadsheet_name') || '';
-  });
-  const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>(() => {
-    return localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
-  });
-  const [autoSync, setAutoSync] = useState<boolean>(true);
-  const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false);
-  const [manualTokenInput, setManualTokenInput] = useState<string>('');
-  const [showManualTokenForm, setShowManualTokenForm] = useState<boolean>(true);
-  const [customClientId, setCustomClientId] = useState<string>(() => {
-    return localStorage.getItem('custom_google_client_id') || '';
-  });
-  const apiClientId = customClientId;
-  const setApiClientId = setCustomClientId;
-  const [appsScriptInput, setAppsScriptInput] = useState<string>(() => {
-    return localStorage.getItem('logiconnect_spreadsheet_id')?.startsWith('https://') 
-      ? localStorage.getItem('logiconnect_spreadsheet_id') || ''
-      : '';
-  });
-
-  const [apiClientSecret, setApiClientSecret] = useState<string>(() => {
-    return localStorage.getItem('google_client_secret') || '';
-  });
-  const [apiRefreshToken, setApiRefreshToken] = useState<string>(() => {
-    return localStorage.getItem('google_refresh_token') || '';
-  });
-  const [apiSpreadsheetId, setApiSpreadsheetId] = useState<string>(() => {
-    const sId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
-    return sId.startsWith('https://') ? '' : sId;
-  });
-
-  // Helper to exchange Refresh Token for a fresh Access Token using official REST API
-  const refreshGoogleAccessToken = async (): Promise<string> => {
-    const rToken = localStorage.getItem('google_refresh_token');
-    const cId = localStorage.getItem('custom_google_client_id');
-    const cSecret = localStorage.getItem('google_client_secret');
-    
-    if (!rToken || !cId || !cSecret) {
-      throw new Error('Refresh token config parameters (Client ID, Client Secret, Refresh Token) are missing in storage.');
-    }
-    
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: cId,
-        client_secret: cSecret,
-        refresh_token: rToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-    
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Token refresh failed: ${errBody}`);
-    }
-    
-    const data = await res.json();
-    if (data.access_token) {
-      setGoogleToken(data.access_token);
-      localStorage.setItem('google_access_token', data.access_token);
-      return data.access_token;
-    } else {
-      throw new Error('Access token not found in Google OAuth response');
-    }
-  };
-
-  // Unified handler for Google Sheets API errors
-  const handleGoogleApiError = async (err: any, customPrefix: string) => {
-    console.error(`${customPrefix}:`, err);
-    const errMsg = String(err.message || err).toLowerCase();
-    if (errMsg.includes('401') || errMsg.includes('credentials') || errMsg.includes('expired') || errMsg.includes('token')) {
-      if (localStorage.getItem('is_refresh_token_mode') === 'true') {
-        try {
-          console.log('Attempting automatic OAuth Token refresh...');
-          const newToken = await refreshGoogleAccessToken();
-          addToast('success', 'Google API Token-ը ավտոմատ թարմացվեց (Refresh Token-ով)։');
-          // Trigger a silent reload of orders to make sure we are synced
-          const sId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
-          const sTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
-          if (sId) {
-            const res = await readOrdersFromSheet(sId, sTitle, newToken);
-            if (res && res.orders) {
-              setOrders(res.orders);
-              localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-            }
-          }
-          return;
-        } catch (refreshErr) {
-          console.error('Automated token refresh failed:', refreshErr);
-        }
-      }
-      setGoogleToken('');
-      clearCachedToken();
-      addToast('delete', 'Google հաշվի կապն ընդհատվել է (լրացել է ժամկետը)։ Խնդրում ենք նորից միացնել Sheets-ը։');
-      setActiveView('google-sheets');
-      setShowManualTokenForm(true);
-    } else {
-      addToast('delete', `${customPrefix}՝ ${err.message || err}`);
-    }
-  };
-
-  // Load spreadsheets function and auto-initialize if missing
-  const fetchSpreadsheets = async (token: string) => {
-    try {
-      const list = await listSpreadsheets(token);
-      setSpreadsheets(list);
-
-      let storedId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
-      let storedTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
-
-      if (!storedId && list.length > 0) {
-        // Auto-select existing spreadsheet
-        const firstSheet = list[0];
-        storedId = firstSheet.id;
-        storedTitle = await getFirstSheetTitle(storedId, token).catch(() => 'Sheet1');
-        setSelectedSpreadsheetId(storedId);
-        setSelectedSpreadsheetName(firstSheet.name);
-        setSelectedSheetTitle(storedTitle);
-        localStorage.setItem('logiconnect_spreadsheet_id', storedId);
-        localStorage.setItem('logiconnect_spreadsheet_name', firstSheet.name);
-        localStorage.setItem('logiconnect_sheet_title', storedTitle);
-      } else if (!storedId && list.length === 0) {
-        // Auto-create spreadsheet if user has none
-        const newName = `tab.am POS Պատվերներ`;
-        const created = await createSpreadsheet(token, newName);
-        const firstTitle = await getFirstSheetTitle(created.id, token).catch(() => 'Sheet1');
-        storedId = created.id;
-        storedTitle = firstTitle;
-        setSelectedSpreadsheetId(created.id);
-        setSelectedSpreadsheetName(newName);
-        setSelectedSheetTitle(firstTitle);
-        localStorage.setItem('logiconnect_spreadsheet_id', created.id);
-        localStorage.setItem('logiconnect_spreadsheet_name', newName);
-        localStorage.setItem('logiconnect_sheet_title', firstTitle);
-        setSpreadsheets([{ id: created.id, name: newName }]);
-      }
-
-      // Auto-import orders on connect
-      if (storedId) {
-        readOrdersFromSheet(storedId, storedTitle, token)
-          .then(res => {
-            if (res && res.orders) {
-              setOrders(res.orders);
-              localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-            }
-          })
-          .catch(err => console.warn('Auto initial read error:', err));
-      }
-    } catch (err: any) {
-      handleGoogleApiError(err, 'Failed to load spreadsheets list');
-    }
-  };
-
-  // Listen to Google/Firebase auth session state
-  useEffect(() => {
-    if (localStorage.getItem('is_direct_apps_script') === 'true' || localStorage.getItem('is_refresh_token_mode') === 'true') {
-      return;
-    }
-    const unsubscribe = initAuth(
-      (user, token) => {
-        setGoogleUser(user);
-        setGoogleToken(token);
-        if (token) {
-          // Silently try to load spreadsheets and orders on boot
-          listSpreadsheets(token)
-            .then(list => {
-              setSpreadsheets(list);
-              let storedId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
-              let storedTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
-              if (storedId) {
-                readOrdersFromSheet(storedId, storedTitle, token)
-                  .then(res => {
-                    if (res && res.orders) {
-                      setOrders(res.orders);
-                      localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-                    }
-                  })
-                  .catch(err => console.warn('Silent read error on mount:', err));
-              }
-            })
-            .catch(err => {
-              console.warn('Silent initial fetch failed, token probably expired:', err);
-              // Silently clear token to avoid showing popups on boot
-              setGoogleToken('');
-              clearCachedToken();
-            });
-        }
-      },
-      () => {
-        if (localStorage.getItem('is_direct_apps_script') === 'true' || localStorage.getItem('is_refresh_token_mode') === 'true') return;
-        setGoogleUser(null);
-        setGoogleToken('');
-      }
-    );
-    return () => unsubscribe();
-  }, []);
-
-  // Exchange Refresh Token on App Startup if Refresh Token Mode is enabled
-  useEffect(() => {
-    if (localStorage.getItem('is_refresh_token_mode') === 'true') {
-      refreshGoogleAccessToken()
-        .then(token => {
-          const storedId = localStorage.getItem('logiconnect_spreadsheet_id') || '';
-          const storedTitle = localStorage.getItem('logiconnect_sheet_title') || 'Sheet1';
-          if (storedId) {
-            readOrdersFromSheet(storedId, storedTitle, token)
-              .then(res => {
-                if (res && res.orders) {
-                  setOrders(res.orders);
-                  localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-                }
-              })
-              .catch(err => console.warn('Silent initial read error under refresh token mode:', err));
-          }
-        })
-        .catch(err => {
-          console.warn('Silent initial refresh token exchange failed on boot:', err);
-          // Keep it silent on boot to avoid throwing loud errors on mount
-        });
-    }
-  }, []);
-
-  // Periodic background polling (Real-time sync from Google Sheets every 15 seconds)
-  useEffect(() => {
-    if (!googleToken || !selectedSpreadsheetId) return;
-
-    const interval = setInterval(() => {
-      readOrdersFromSheet(selectedSpreadsheetId, selectedSheetTitle, googleToken)
-        .then(res => {
-          if (res && Array.isArray(res.orders)) {
-            setOrders(prevOrders => {
-              if (JSON.stringify(prevOrders) !== JSON.stringify(res.orders)) {
-                localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-                return res.orders;
-              }
-              return prevOrders;
-            });
-          }
-        })
-        .catch(err => {
-          console.warn('Background sync check error:', err);
-        });
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [googleToken, selectedSpreadsheetId, selectedSheetTitle]);
-
-  // Save changes of local spreadsheet config to localStorage
-  useEffect(() => {
-    localStorage.setItem('logiconnect_autosync_enabled', 'true');
-  }, [autoSync]);
 
   // In-App Notification Center Setup
   const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
@@ -392,6 +117,7 @@ export default function App() {
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSoundMuted, setIsSoundMuted] = useState(() => posAudio.isMuted());
   const [isAlertEnabled, setIsAlertEnabled] = useState(() => {
     return localStorage.getItem('logiconnect_notify_delivered') !== 'false';
@@ -423,13 +149,36 @@ export default function App() {
         if (searchInput) searchInput.focus();
       } else if (e.key === 's' || e.key === 'S' || e.key === 'ս' || e.key === 'Ս') {
         e.preventDefault();
+        posAudio.playScanBeep();
         setIsBarcodeScannerOpen(prev => !prev);
       } else if (e.key === 'n' || e.key === 'N' || e.key === 'ն' || e.key === 'Ն') {
         e.preventDefault();
+        posAudio.playScanBeep();
         setActiveView('create-order');
+      } else if (e.key === '1') {
+        e.preventDefault();
+        posAudio.playScanBeep();
+        setActiveView('orders');
+      } else if (e.key === '2') {
+        e.preventDefault();
+        posAudio.playScanBeep();
+        setActiveView('dashboard');
+      } else if (e.key === '3') {
+        e.preventDefault();
+        posAudio.playScanBeep();
+        setActiveView('reports');
+      } else if (e.key === '4') {
+        e.preventDefault();
+        posAudio.playScanBeep();
+        setActiveView('json-database');
+      } else if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        posAudio.playScanBeep();
+        setIsShortcutsOpen(prev => !prev);
       } else if (e.key === 'Escape') {
         setIsBarcodeScannerOpen(false);
         setIsNotificationsOpen(false);
+        setIsShortcutsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -445,6 +194,7 @@ export default function App() {
   }, [isAlertEnabled]);
 
   const playNotificationSound = () => {
+    if (isSoundMuted || posAudio.isMuted()) return;
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
@@ -522,46 +272,6 @@ export default function App() {
     };
   }, [orders]);
 
-  const filteredOrders = useMemo(() => {
-    const rawSearch = searchQuery.trim();
-    const searchLower = rawSearch.toLowerCase();
-    const searchDigits = rawSearch.replace(/\D/g, '');
-
-    return orders.filter(order => {
-      if (!rawSearch) {
-        if (statusFilter === 'Բոլորը') return true;
-        if (statusFilter === 'Սպասում է դրամարկղին' || statusFilter === 'Սպասում է կասային') return order.status === OrderStatus.PENDING;
-        if (statusFilter === 'Վաճառված (POS)' || statusFilter === 'Վաճառված (ArmSoft)') return order.status === OrderStatus.SOLD;
-        if (statusFilter === 'Առաքման մեջ' || statusFilter === 'Ընթացքի մեջ') return order.status === OrderStatus.IN_TRANSIT;
-        if (statusFilter === 'Ավարտված') return order.status === OrderStatus.DELIVERED;
-        return order.status === statusFilter;
-      }
-
-      const orderPhoneDigits = (order.phoneNumber || '').replace(/\D/g, '');
-      const itemCodesMatch = (order.items || []).some(item => 
-        (item.code && item.code.toLowerCase().includes(searchLower)) ||
-        (item.artikul && item.artikul.toLowerCase().includes(searchLower))
-      );
-
-      const matchesSearch = 
-        order.id.toLowerCase().includes(searchLower) ||
-        (order.customerName && order.customerName.toLowerCase().includes(searchLower)) ||
-        (order.phoneNumber && order.phoneNumber.toLowerCase().includes(searchLower)) ||
-        (searchDigits.length > 0 && orderPhoneDigits.includes(searchDigits)) ||
-        (order.address && order.address.toLowerCase().includes(searchLower)) ||
-        itemCodesMatch;
-      
-      if (statusFilter === 'Բոլորը') return matchesSearch;
-      if (statusFilter === 'Սպասում է դրամարկղին' || statusFilter === 'Սպասում է կասային') return matchesSearch && order.status === OrderStatus.PENDING;
-      if (statusFilter === 'Վաճառված (POS)' || statusFilter === 'Վաճառված (ArmSoft)') return matchesSearch && order.status === OrderStatus.SOLD;
-      if (statusFilter === 'Առաքման մեջ' || statusFilter === 'Ընթացքի մեջ') {
-        return matchesSearch && order.status === OrderStatus.IN_TRANSIT;
-      }
-      if (statusFilter === 'Ավարտված') return matchesSearch && order.status === OrderStatus.DELIVERED;
-      return matchesSearch && order.status === statusFilter;
-    });
-  }, [orders, searchQuery, statusFilter]);
-
   // Load Initial Data
   useEffect(() => {
     const { orders: initialOrders } = getStoredData();
@@ -584,267 +294,30 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Google Sync Handlers
-  const handleGoogleConnect = async () => {
-    setSpreadsheetLoading(true);
-    try {
-      const res = await googleSignIn();
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleToken(res.accessToken);
-        addToast('success', 'Google հաշիվը հաջողությամբ միացվեց');
-        await fetchSpreadsheets(res.accessToken);
-      }
-    } catch (err: any) {
-      if (err?.code === 'auth/popup-closed-by-user' || err?.message?.includes('popup-closed-by-user')) {
-        addToast('save', 'Մուտքի պատուհանը փակվեց օգտատիրոջ կողմից։');
-      } else if (err?.code === 'auth/popup-blocked' || err?.message?.includes('popup-blocked')) {
-        addToast('warning', 'Բրաուզերը արգելափակել է pop-up պատուհանը։ Խնդրում ենք թույլատրել pop-up-ները։');
-      } else {
-        addToast('delete', `Կապակցման սխալ՝ ${err.message || err}`);
-      }
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleDirectTokenConnect = async () => {
-    if (!manualTokenInput.trim()) {
-      addToast('warning', 'Խնդրում ենք մուտքագրել Access Token-ը։');
-      return;
-    }
-    setSpreadsheetLoading(true);
-    try {
-      const res = await connectWithDirectToken(manualTokenInput.trim());
-      if (res) {
-        setGoogleUser(res.user);
-        setGoogleToken(res.accessToken);
-        addToast('success', 'Google Access Token-ով հաջողությամբ միացվեց');
-        await fetchSpreadsheets(res.accessToken);
-        setShowManualTokenForm(false);
-        setManualTokenInput('');
-      }
-    } catch (err: any) {
-      addToast('delete', `Token-ի սխալ՝ ${err.message || err}`);
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleSaveCustomClientId = (clientIdVal: string) => {
-    const val = clientIdVal.trim();
-    if (val) {
-      localStorage.setItem('custom_google_client_id', val);
-      addToast('success', 'Custom Google Client ID-ն հաջողությամբ պահպանվեց։');
+  // Local JSON Database Handlers
+  const handleImportOrdersFromJson = (importedOrders: Order[], mode: 'replace' | 'merge') => {
+    let updated: Order[];
+    if (mode === 'replace') {
+      updated = importedOrders;
     } else {
-      localStorage.removeItem('custom_google_client_id');
-      addToast('success', 'Custom Google Client ID-ն ջնջվեց (լռելյայն ID-ն վերականգնված է)։');
+      const existingIds = new Set(orders.map(o => o.id));
+      const newItems = importedOrders.filter(o => !existingIds.has(o.id));
+      updated = [...newItems, ...orders];
     }
-    setCustomClientId(val);
-  };
-
-  const handleAppsScriptConnect = async () => {
-    const url = appsScriptInput.trim();
-    if (!url) {
-      addToast('warning', 'Խնդրում ենք մուտքագրել Google Apps Script Web App URL-ը։');
-      return;
-    }
-    if (!url.startsWith('https://')) {
-      addToast('warning', 'URL-ը պետք է սկսվի https://-ով։');
-      return;
-    }
-    setSpreadsheetLoading(true);
-    try {
-      // Test read values
-      const res = await readOrdersFromSheet(url, 'Sheet1', 'direct_apps_script');
-      if (res && Array.isArray(res.orders)) {
-        localStorage.setItem('is_direct_apps_script', 'true');
-        localStorage.setItem('logiconnect_spreadsheet_id', url);
-        localStorage.setItem('logiconnect_spreadsheet_name', 'Direct Sheet (No Auth)');
-        localStorage.setItem('logiconnect_sheet_title', 'Sheet1');
-
-        setGoogleUser({ email: 'apps.script@direct', displayName: 'Direct Sheet (Apps Script)' });
-        setGoogleToken('direct_apps_script');
-        setSelectedSpreadsheetId(url);
-        setSelectedSpreadsheetName('Direct Sheet (No Auth)');
-        setSelectedSheetTitle('Sheet1');
-
-        if (res.orders.length > 0) {
-          setOrders(res.orders);
-          localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-        }
-
-        addToast('success', 'Google Sheet-ը հաջողությամբ միացվեց ԱՌԱՆՑ Google Auth-ի (Direct Mode)։');
-        setShowManualTokenForm(false);
-      } else {
-        throw new Error('No orders array returned from Google Sheet.');
-      }
-    } catch (err: any) {
-      addToast('delete', `Միացման սխալ։ Համոզվեք, որ Apps Script-ը ճիշտ է տեղադրված և հասանելիությունը դրված է «Anyone» (Բոլորին)։ Սխալ՝ ${err.message || err}`);
-    } finally {
-      setSpreadsheetLoading(false);
+    localStorage.setItem('crm_orders', JSON.stringify(updated));
+    setOrders(updated);
+    if (updated.length > 0) {
+      setCurrentOrderId(updated[0].id);
     }
   };
 
-  const handleGoogleDisconnect = async () => {
-    setSpreadsheetLoading(true);
-    try {
-      localStorage.removeItem('is_direct_apps_script');
-      localStorage.removeItem('is_refresh_token_mode');
-      localStorage.removeItem('google_refresh_token');
-      localStorage.removeItem('google_client_secret');
-      localStorage.removeItem('google_access_token');
-      localStorage.removeItem('logiconnect_spreadsheet_id');
-      localStorage.removeItem('logiconnect_spreadsheet_name');
-      localStorage.removeItem('logiconnect_sheet_title');
-      await logout().catch(() => {});
-      setGoogleUser(null);
-      setGoogleToken('');
-      setSpreadsheets([]);
-      setAppsScriptInput('');
-      setApiClientSecret('');
-      setApiRefreshToken('');
-      setApiSpreadsheetId('');
-      addToast('delete', 'Google Sheets կապն անջատվեց');
-    } catch (err: any) {
-      addToast('delete', `Անջատման սխալ՝ ${err.message || err}`);
-    } finally {
-      setSpreadsheetLoading(false);
+  const handleResetToDemoOrders = () => {
+    const { orders: demoOrders } = resetToDemoOrders();
+    setOrders(demoOrders);
+    if (demoOrders.length > 0) {
+      setCurrentOrderId(demoOrders[0].id);
     }
-  };
-
-  const handleRefreshTokenConnect = async () => {
-    const cId = apiClientId.trim();
-    const cSecret = apiClientSecret.trim();
-    const rToken = apiRefreshToken.trim();
-    const sId = apiSpreadsheetId.trim();
-
-    if (!cId || !cSecret || !rToken || !sId) {
-      addToast('warning', 'Խնդրում ենք լրացնել բոլոր 4 դաշտերը (Client ID, Client Secret, Refresh Token, Spreadsheet ID)։');
-      return;
-    }
-
-    setSpreadsheetLoading(true);
-    try {
-      // 1. Store configs temporarily
-      localStorage.setItem('custom_google_client_id', cId);
-      localStorage.setItem('google_client_secret', cSecret);
-      localStorage.setItem('google_refresh_token', rToken);
-
-      // 2. Test Refresh token exchange
-      const accessToken = await refreshGoogleAccessToken();
-
-      // 3. Get sheet metadata
-      const sheetTitle = await getFirstSheetTitle(sId, accessToken).catch(() => 'Sheet1');
-
-      // 4. Save and set state
-      localStorage.setItem('is_refresh_token_mode', 'true');
-      localStorage.removeItem('is_direct_apps_script');
-      localStorage.setItem('logiconnect_spreadsheet_id', sId);
-      localStorage.setItem('logiconnect_spreadsheet_name', 'Direct API (Auto-Refresh)');
-      localStorage.setItem('logiconnect_sheet_title', sheetTitle);
-
-      setGoogleUser({ email: 'api@direct.google', displayName: 'Google API (Auto-Refresh)' });
-      setGoogleToken(accessToken);
-      setSelectedSpreadsheetId(sId);
-      setSelectedSpreadsheetName('Direct API (Auto-Refresh)');
-      setSelectedSheetTitle(sheetTitle);
-
-      // 5. Initial load
-      const res = await readOrdersFromSheet(sId, sheetTitle, accessToken);
-      if (res && res.orders) {
-        setOrders(res.orders);
-        localStorage.setItem('crm_orders', JSON.stringify(res.orders));
-      }
-
-      addToast('success', 'Google Sheet-ը հաջողությամբ միացվեց Պաշտոնական API-ով (առանց Script-ի)։');
-      setShowManualTokenForm(false);
-    } catch (err: any) {
-      localStorage.removeItem('is_refresh_token_mode');
-      localStorage.removeItem('google_refresh_token');
-      localStorage.removeItem('google_client_secret');
-      addToast('delete', `Կապակցման սխալ։ Ստուգեք մուտքագրված տվյալները և Sheets-ի հասանելիությունը։ Սխալ՝ ${err.message || err}`);
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleCreateNewSpreadsheet = async () => {
-    if (!googleToken) return;
-    setSpreadsheetLoading(true);
-    try {
-      const name = `LogiConnect Orders - ${new Date().toLocaleDateString()}`;
-      const sheet = await createSpreadsheet(googleToken, name);
-      
-      const firstTitle = await getFirstSheetTitle(sheet.id, googleToken);
-      
-      setSelectedSpreadsheetId(sheet.id);
-      setSelectedSpreadsheetName(name);
-      setSelectedSheetTitle(firstTitle);
-      
-      localStorage.setItem('logiconnect_spreadsheet_id', sheet.id);
-      localStorage.setItem('logiconnect_spreadsheet_name', name);
-      localStorage.setItem('logiconnect_sheet_title', firstTitle);
-      
-      addToast('success', 'Նոր աղյուսակը հաջողությամբ ստեղծվեց Google Drive-ում');
-      await fetchSpreadsheets(googleToken);
-    } catch (err: any) {
-      handleGoogleApiError(err, 'Աղյուսակի ստեղծման սխալ');
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleSelectSpreadsheet = async (id: string) => {
-    const found = spreadsheets.find(s => s.id === id);
-    if (!found) return;
-    setSpreadsheetLoading(true);
-    try {
-      const firstTitle = await getFirstSheetTitle(id, googleToken);
-      setSelectedSpreadsheetId(id);
-      setSelectedSpreadsheetName(found.name);
-      setSelectedSheetTitle(firstTitle);
-      
-      localStorage.setItem('logiconnect_spreadsheet_id', id);
-      localStorage.setItem('logiconnect_spreadsheet_name', found.name);
-      localStorage.setItem('logiconnect_sheet_title', firstTitle);
-      
-      addToast('success', 'Աղյուսակը հաջողությամբ ընտրվեց');
-    } catch (err: any) {
-      handleGoogleApiError(err, 'Աղյուսակի միացման սխալ');
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleImportOrders = async () => {
-    if (!googleToken || !selectedSpreadsheetId) return;
-    setSpreadsheetLoading(true);
-    try {
-      const result = await readOrdersFromSheet(selectedSpreadsheetId, selectedSheetTitle, googleToken);
-      if (result.orders) {
-        setOrders(result.orders);
-        localStorage.setItem('crm_orders', JSON.stringify(result.orders));
-        addToast('success', `${result.orders.length} պատվերներ բեռնվեցին Google Sheets-ից`);
-      }
-    } catch (err: any) {
-      handleGoogleApiError(err, 'Ներմուծման սխալ');
-    } finally {
-      setSpreadsheetLoading(false);
-    }
-  };
-
-  const handleExportOrders = async () => {
-    if (!googleToken || !selectedSpreadsheetId) return;
-    setSpreadsheetLoading(true);
-    try {
-      await overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, orders, googleToken);
-      addToast('success', 'Բոլոր պատվերները արտահանվել են Google Sheets');
-    } catch (err: any) {
-      handleGoogleApiError(err, 'Արտահանման սխալ');
-    } finally {
-      setSpreadsheetLoading(false);
-    }
+    addToast('success', 'Օրինակելի պատվերները վերականգնվեցին։');
   };
 
   // Bulletproof custom Armenian Date Formatter
@@ -873,6 +346,7 @@ export default function App() {
   };
 
   const handleAddNewOrder = (orderData: Order, shouldPrint?: boolean) => {
+    posAudio.playSuccessChime();
     const historyEntry = { status: orderData.status, timestamp: new Date().toISOString() };
     const orderWithHistory = { 
       ...orderData, 
@@ -897,15 +371,6 @@ export default function App() {
       'success',
       orderData.id
     );
-
-    // Auto-sync addition to Google Sheets
-    if (autoSync && googleToken && selectedSpreadsheetId) {
-      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
-        .then(() => addToast('success', 'Սինխրոնացվեց Google Sheets-ի հետ'))
-        .catch(err => {
-          handleGoogleApiError(err, 'Google Sheets ավտոմատ սինխրոնացման սխալ');
-        });
-    }
   };
 
   const handleUpdateOrder = (orderId: string, updates: Partial<Order>) => {
@@ -942,12 +407,6 @@ export default function App() {
     setCurrentOrderId(orderId);
     setActiveView('view-order');
     addToast('save', 'Փոփոխությունները պահպանված են');
-
-    // Auto-sync update to Google Sheets
-    if (autoSync && googleToken && selectedSpreadsheetId) {
-      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
-        .catch(err => handleGoogleApiError(err, 'Ավտոմատ սինխրոնացման թարմացման սխալ'));
-    }
   };
 
   const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
@@ -988,6 +447,12 @@ export default function App() {
     });
     setOrders(updatedOrders);
 
+    if (targetStatus === OrderStatus.SOLD || targetStatus === OrderStatus.DELIVERED || targetPaymentStatus === PaymentStatus.PAID) {
+      posAudio.playCashRegisterSound();
+    } else {
+      posAudio.playSuccessChime();
+    }
+
     // Trigger in-app notifications
     if (newStatus === OrderStatus.DELIVERED) {
       if (isAlertEnabled) {
@@ -1016,12 +481,6 @@ export default function App() {
       );
       addToast('save', `Կարգավիճակը թարմացվել է՝ ${newStatus}`);
     }
-
-    // Auto-sync status to Google Sheets
-    if (autoSync && googleToken && selectedSpreadsheetId) {
-      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
-        .catch(err => handleGoogleApiError(err, 'Ավտոմատ կարգավիճակի սինխրոնացման սխալ'));
-    }
   };
 
   const handleDeleteOrder = (orderId: string) => {
@@ -1030,13 +489,6 @@ export default function App() {
     setCurrentOrderId(null);
     setActiveView('orders');
     addToast('delete', 'Պատվերը հեռացվեց');
-
-    // Real-time sync deletion to Google Sheets
-    if (googleToken && selectedSpreadsheetId) {
-      overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, updatedOrders, googleToken)
-        .then(() => addToast('save', '🟢 Հեռացումը սինխրոնացվեց Google Sheets-ում'))
-        .catch(err => handleGoogleApiError(err, 'Google Sheets հեռացման սխալ'));
-    }
   };
 
   const handleClearAllOrders = () => {
@@ -1047,451 +499,102 @@ export default function App() {
       setActiveView('orders');
       addToast('delete', 'Բոլոր պատվերները մաքրվեցին: Համակարգը զրոյացված է (0):');
       posAudio.playSuccessChime();
-
-      // Real-time sync clear to Google Sheets
-      if (googleToken && selectedSpreadsheetId) {
-        overwriteAllOrdersInSheet(selectedSpreadsheetId, selectedSheetTitle, cleared, googleToken)
-          .then(() => addToast('save', '🟢 Google Sheets-ը զրոյացվեց'))
-          .catch(err => handleGoogleApiError(err, 'Google Sheets զրոյացման սխալ'));
-      }
     }
   };
 
+  const handleToggleSidebar = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
+    localStorage.setItem('tab_pos_sidebar_collapsed', String(collapsed));
+  };
+
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans antialiased">
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Top Navigation Panel (Navpanel) */}
-        <header className="border-b border-slate-200/80 bg-white shrink-0 z-30 shadow-2xs w-full">
-          {/* Main Top Nav Bar */}
-          <div className="px-3 sm:px-5 lg:px-7 py-2.5 flex items-center justify-between gap-2 sm:gap-3 w-full">
-            
-            {/* Left: Brand Identity or Back Button */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/90 rounded-xl transition-all active:scale-95 cursor-pointer md:hidden shrink-0 flex items-center justify-center shadow-2xs"
-                title="Բացել Մենյուն"
-              >
-                <Menu className="w-4 h-4 text-slate-800" />
-              </button>
+    <div className="flex h-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans antialiased">
+      {/* 1. Desktop Modern Sidebar */}
+      <Sidebar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        ordersCount={orders.length}
+        onOpenScanner={() => {
+          posAudio.playScanBeep();
+          setIsBarcodeScannerOpen(true);
+        }}
+        onExportJson={() => {
+          downloadOrdersAsJsonFile(orders);
+          addToast('success', `Արտահանվել է ${orders.length} պատվեր JSON ֆայլով։`);
+        }}
+        isSoundMuted={isSoundMuted}
+        toggleSoundMute={toggleSoundMute}
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={handleToggleSidebar}
+        currentTime={currentTime}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
+      />
 
-              {(activeView === 'create-order' || activeView === 'view-order' || activeView === 'edit-order') ? (
-                <button 
-                  onClick={() => setActiveView('orders')}
-                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all active:scale-95 border border-slate-200/80 shadow-2xs cursor-pointer"
-                  title="Վերադառնալ պատվերների ցանկ"
-                >
-                  <ArrowLeft className="w-4 h-4 text-slate-600" />
-                  <span className="font-bold hidden xs:inline">Պատվերներ</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="bg-indigo-600 h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center text-white shadow-xs shadow-indigo-200 shrink-0">
-                    <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 sm:gap-1.5">
-                      <span className="font-black text-slate-900 tracking-tight text-sm sm:text-base lg:text-lg leading-none">
-                        tab.am
-                      </span>
-                      <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Առցանց POS</span>
-                      </span>
-                    </div>
-                    <p className="text-[9px] text-slate-400 font-bold hidden xl:block">Խանութ-սրահի համակարգ</p>
-                  </div>
-                </div>
-              )}
-            </div>
+      {/* 2. Main Workstation View Area */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+        {/* Modern Top Header with Breadcrumbs, Global Search, and Quick Actions */}
+        <Header
+          activeView={activeView}
+          setActiveView={setActiveView}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          stats={stats}
+          ordersCount={orders.length}
+          unreadCount={unreadCount}
+          isNotificationsOpen={isNotificationsOpen}
+          setIsNotificationsOpen={setIsNotificationsOpen}
+          onOpenScanner={() => {
+            posAudio.playScanBeep();
+            setIsBarcodeScannerOpen(true);
+          }}
+          isSoundMuted={isSoundMuted}
+          toggleSoundMute={toggleSoundMute}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          currentOrder={currentOrder}
+        />
 
-            {/* Center: Top Navigation Panel Tabs */}
-            <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/90 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shrink-0 flex-nowrap overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setActiveView('orders')}
-                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${
-                  activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order'
-                    ? 'nav-link-active'
-                    : 'nav-link-inactive'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
-                <span className="hidden sm:inline">Պատվերներ</span>
-                {orders.length > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-black ${
-                    activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order'
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'bg-slate-200 text-slate-600'
-                  }`}>
-                    {orders.length}
-                  </span>
-                )}
-              </button>
+        {/* Dynamic Notification Center Dropdown */}
+        <NotificationCenter
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+          notifications={notifications}
+          onMarkAllRead={() => {
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            addToast('save', 'Բոլոր ծանուցումները նշվեցին կարդացված');
+          }}
+          onClearHistory={() => {
+            setNotifications([]);
+            addToast('delete', 'Ծանուցումների պատմությունը մաքրվեց');
+          }}
+          onSelectNotification={(notif) => {
+            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+            if (notif.orderId) {
+              const ord = orders.find(o => o.id === notif.orderId);
+              if (ord) {
+                setCurrentOrderId(ord.id);
+                setActiveView('view-order');
+              } else {
+                addToast('save', 'Պատվերը համակարգում չի գտնվել');
+              }
+            }
+            setIsNotificationsOpen(false);
+          }}
+          isAlertEnabled={isAlertEnabled}
+          onToggleAlert={() => setIsAlertEnabled(!isAlertEnabled)}
+          onTestNotification={() => {
+            triggerNotification(
+              '🔔 Ծանուցման Ստուգում',
+              'Համակարգի ծանուցումները և ազդանշանը հաջողությամբ գործում են։',
+              'success'
+            );
+          }}
+        />
 
-              <button
-                onClick={() => setActiveView('dashboard')}
-                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'dashboard' ? 'nav-link-active' : 'nav-link-inactive'}`}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
-                <span className="hidden md:inline">Վիճակագրություն</span>
-                <span className="hidden sm:inline md:hidden">Վիճակ</span>
-              </button>
-
-              <button
-                onClick={() => setActiveView('google-sheets')}
-                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'google-sheets' ? 'nav-link-active' : 'nav-link-inactive'}`}
-              >
-                <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-                <span className="hidden md:inline">Google Sheets</span>
-                <span className="hidden sm:inline md:hidden">Sheets</span>
-                {googleUser && googleToken ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
-                ) : (
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300 ml-0.5" />
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveView('reports')}
-                className={`nav-link text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap shrink-0 ${activeView === 'reports' ? 'nav-link-active' : 'nav-link-inactive'}`}
-              >
-                <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-                <span className="hidden md:inline">PDF Հաշվետվություններ</span>
-                <span className="hidden sm:inline md:hidden">PDF</span>
-              </button>
-            </nav>
-
-            {/* Right: Actions, Search, Scanner, Sound, Notifications, New Order */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Ultra-Wide Live Clock Badge (2xl+ full, xl+ compact time) */}
-              <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-medium text-slate-600">
-                <Clock className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                <span className="font-mono font-bold text-slate-800">{formattedDate}</span>
-              </div>
-              <div className="hidden xl:flex 2xl:hidden items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-medium text-slate-600">
-                <Clock className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                <span className="font-mono font-bold text-slate-800">
-                  {currentTime.toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-              </div>
-
-              {/* Desktop Quick Search */}
-              <div className="relative hidden lg:block w-32 xl:w-44">
-                {searchQuery.replace(/\D/g, '').length > 0 ? (
-                  <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                ) : (
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                )}
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (activeView !== 'orders' && e.target.value) {
-                      setActiveView('orders');
-                    }
-                  }}
-                  placeholder="Որոնել (/)"
-                  className="w-full pl-7 pr-6 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder:text-slate-400"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
-                  >
-                    <CloseIcon className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* Barcode & SKU Scanner Tool */}
-              <button
-                type="button"
-                onClick={() => {
-                  posAudio.playScanBeep();
-                  setIsBarcodeScannerOpen(true);
-                }}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-                title="Բացել Շտրիխ-Կոդի Սկաները (Ստեղն՝ S)"
-              >
-                <ScanLine className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="hidden 2xl:inline">Սկաներ</span>
-                <span className="hidden xl:inline text-[9.5px] font-mono opacity-50 bg-slate-200/80 px-1 rounded">S</span>
-              </button>
-
-              {/* Sound Mute/Unmute Toggle */}
-              <button
-                type="button"
-                onClick={toggleSoundMute}
-                className={`p-1.5 sm:p-2 rounded-xl border transition-all duration-200 active:scale-95 cursor-pointer ${
-                  isSoundMuted 
-                    ? 'bg-slate-100 border-slate-200 text-slate-400' 
-                    : 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                }`}
-                title={isSoundMuted ? 'Միացնել ձայները' : 'Անջատել ձայները'}
-              >
-                {isSoundMuted ? <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-              </button>
-
-              {/* Dynamic Notification Bell with custom popover */}
-              <div className="relative">
-                <button 
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className={`relative p-1.5 sm:p-2 rounded-xl border transition-all duration-200 active:scale-95 hover:bg-slate-50 cursor-pointer ${isNotificationsOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm' : 'bg-slate-50/50 border-slate-200/60 text-slate-650'}`}
-                  title="Ծանուցումներ"
-                >
-                  <Bell className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${unreadCount > 0 ? 'animate-bounce text-indigo-600' : 'text-slate-500'}`} />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[8px] font-black text-white ring-2 ring-white">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isNotificationsOpen && (
-                    <>
-                      {/* Backdrop mask */}
-                       <div 
-                         className="fixed inset-0 z-40" 
-                         onClick={() => setIsNotificationsOpen(false)}
-                       />
-                       
-                       <motion.div
-                         initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                         animate={{ opacity: 1, y: 8, scale: 1 }}
-                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                         transition={{ type: "spring", duration: 0.25 }}
-                         className="fixed inset-x-4 top-20 mx-auto max-w-sm sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 sm:max-w-none bg-white border border-slate-150 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col text-left"
-                       >
-                         {/* Dropdown Header */}
-                         <div className="p-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                             <Bell className="w-4 h-4 text-indigo-600" />
-                             <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Ծանուցումներ</h3>
-                           </div>
-                           {unreadCount > 0 && (
-                             <button
-                               onClick={() => {
-                                 setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-                                 addToast('save', 'Բոլորը նշվեցին որպես կարդացված');
-                               }}
-                               className="text-[9.5px] font-bold text-indigo-650 hover:underline hover:text-indigo-755 bg-transparent border-0 outline-none cursor-pointer"
-                             >
-                               Նշել կարդացված
-                             </button>
-                           )}
-                         </div>
-
-                         {/* History Area */}
-                         <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
-                           {notifications.length === 0 ? (
-                             <div className="p-8 text-center flex flex-col items-center justify-center text-slate-400">
-                               <BellOff className="w-8 h-8 opacity-40 mb-2" />
-                               <p className="text-[10px] font-bold uppercase tracking-wider">Ծանուցումներ չկան</p>
-                               <p className="text-[9px] text-slate-400/90 leading-tight mt-1 px-4 text-center font-medium">Նոր իրադարձությունների կամ կարգավիճակի փոփոխություններն այստեղ կլինեն:</p>
-                             </div>
-                           ) : (
-                             notifications.map((notif) => {
-                               const isOrderNotif = !!notif.orderId;
-                               
-                               return (
-                                 <div
-                                   key={notif.id}
-                                   onClick={() => {
-                                     // Mark as read
-                                     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-                                     
-                                     // Navigate to order if applies
-                                     if (isOrderNotif) {
-                                       const ord = orders.find(o => o.id === notif.orderId);
-                                       if (ord) {
-                                         setCurrentOrderId(ord.id);
-                                         setActiveView('view-order');
-                                       } else {
-                                         addToast('save', 'Պատվերը համակարգում չի գտնվել');
-                                       }
-                                     }
-                                     setIsNotificationsOpen(false);
-                                   }}
-                                   className={`p-4 flex gap-3 transition-colors text-left relative cursor-pointer group select-none ${notif.read ? 'bg-white hover:bg-slate-50/30' : 'bg-indigo-50/10 hover:bg-indigo-50/20'}`}
-                                 >
-                                   {/* Unread indicator dot */}
-                                   {!notif.read && (
-                                     <span className="absolute top-4.5 right-4 h-2 w-2 rounded-full bg-indigo-600" />
-                                   )}
-
-                                   <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
-                                     notif.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/40' :
-                                     notif.type === 'warning' ? 'bg-rose-50 text-rose-600 border border-rose-100/40' :
-                                     'bg-indigo-50 text-indigo-600 border border-indigo-100/40'
-                                   }`}>
-                                     {notif.type === 'success' && <CheckCircle className="w-4 h-4 stroke-[2.2]" />}
-                                     {notif.type === 'warning' && <XCircle className="w-4 h-4 stroke-[2.2]" />}
-                                     {notif.type === 'info' && <Clock className="w-4 h-4 stroke-[2.2]" />}
-                                     {notif.type === 'error' && <Bell className="w-4 h-4 stroke-[2.2]" />}
-                                   </div>
-
-                                   <div className="flex-1 min-w-0 pr-4">
-                                     <h4 className="text-[11px] font-black text-slate-800 group-hover:text-indigo-600 transition-colors leading-snug tracking-tight">
-                                       {notif.title}
-                                     </h4>
-                                     <p className="text-[10px] text-slate-500 font-medium leading-normal mt-0.5 whitespace-pre-wrap">
-                                       {notif.body}
-                                     </p>
-                                     <div className="flex items-center gap-2 mt-2">
-                                       <span className="text-[8px] font-black text-slate-400 font-mono tracking-wider">
-                                         {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                       </span>
-                                       {isOrderNotif && (
-                                         <span className="text-[8.5px] font-black text-indigo-650 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">
-                                           Պատվեր՝ {notif.orderId}
-                                         </span>
-                                       )}
-                                     </div>
-                                   </div>
-                                 </div>
-                               );
-                             })
-                           )}
-                         </div>
-
-                         {/* Controls Section */}
-                         <div className="bg-slate-50 p-4 border-t border-slate-150 text-[10.5px] text-slate-500 font-bold space-y-3">
-                           <div className="flex items-center justify-between">
-                             <span className="uppercase tracking-widest text-[8.5px] text-slate-400 font-black">ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ</span>
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 triggerNotification(
-                                   '🔔 Ստուգում',
-                                   'Ծանուցումները հաջողությամբ աշխատում են։',
-                                   'success'
-                                 );
-                               }}
-                               className="text-[9px] font-extrabold text-indigo-650 hover:bg-slate-50/80 px-2.5 py-1 rounded bg-white border border-slate-200/60 shadow-sm active:scale-95 transition-all outline-none cursor-pointer"
-                             >
-                               Ստուգել
-                             </button>
-                           </div>
-
-                           <div className="flex items-center justify-between">
-                             <div className="flex items-center gap-2">
-                               {isAlertEnabled ? <Check className="w-3.5 h-3.5 text-indigo-600 stroke-[2.5]" /> : <XCircle className="w-3.5 h-3.5 text-slate-450" />}
-                               <span>Ավարտված պատվերների ծանուցումներ</span>
-                             </div>
-                             <button
-                               onClick={() => setIsAlertEnabled(!isAlertEnabled)}
-                               className={`w-7 h-4 rounded-full p-0.5 transition-colors cursor-pointer focus:outline-none ${isAlertEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                             >
-                               <div className={`w-3 h-3 rounded-full bg-white shadow transform transition-transform duration-200 ${isAlertEnabled ? 'translate-x-3' : 'translate-x-0'}`} />
-                             </button>
-                           </div>
-
-                           {notifications.length > 0 && (
-                             <button
-                               onClick={() => {
-                                 setNotifications([]);
-                                 addToast('delete', 'Ծանուցումները մաքրվեցին');
-                               }}
-                               className="w-full text-center text-rose-600 text-[9px] font-black uppercase tracking-wider hover:underline pt-1 bg-transparent border-none outline-none cursor-pointer block"
-                             >
-                               Մաքրել պատմությունը
-                             </button>
-                           )}
-                         </div>
-                       </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Primary Action Button: "+ Գրանցել [N]" - Always prioritized and fully visible */}
-              <button 
-                onClick={() => {
-                  posAudio.playScanBeep();
-                  setActiveView('create-order');
-                }}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-sm shadow-indigo-200 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-                title="Նոր պատվերի գրանցում (Ստեղն՝ N)"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="inline">Գրանցել</span>
-                <span className="hidden xl:inline text-[9.5px] font-mono opacity-60 bg-indigo-800/60 px-1 py-0.2 rounded">N</span>
-              </button>
-            </div>
-          </div>
-
-        {/* Status Filter Tabs Bar (Shown when activeView is 'orders') */}
-        {activeView === 'orders' && (
-          <div className="px-3 sm:px-5 lg:px-7 py-2 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-              {[
-                { label: 'Բոլորը', count: stats.all, active: statusFilter === 'Բոլորը' },
-                { label: 'Սպասում է դրամարկղին', count: stats.pending, active: statusFilter === 'Սպասում է դրամարկղին' },
-                { label: 'Վաճառված (POS)', count: stats.sold, active: statusFilter === 'Վաճառված (POS)' },
-                { label: 'Առաքման մեջ', count: stats.active, active: statusFilter === 'Առաքման մեջ' },
-                { label: 'Ավարտված', count: stats.delivered, active: statusFilter === 'Ավարտված' }
-              ].map((stat, i) => (
-                <button 
-                  key={i}
-                  onClick={() => setStatusFilter(stat.label)}
-                  className={`flex items-center gap-1.5 shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all text-xs cursor-pointer whitespace-nowrap ${
-                    stat.active 
-                      ? 'bg-slate-900 text-white font-black shadow-xs' 
-                      : 'bg-white hover:bg-slate-100 text-slate-600 font-bold border border-slate-200/60'
-                  }`}
-                >
-                  <span>{stat.label}</span>
-                  <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-black ${
-                    stat.active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {stat.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-500 font-medium font-mono shrink-0 pl-2">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{formattedDate}</span>
-            </div>
-          </div>
-        )}
-      </header>
-
-        {/* Scrolling View Canvas */}
-        <div className="flex-1 overflow-auto custom-scrollbar p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 bg-slate-50/50">
-          <div className="max-w-[1700px] mx-auto flex flex-col space-y-4">
-            
-            {/* Mobile/Tablet Search Bar overlay (shown only on mobile/tablet screen widths) */}
-            {activeView === 'orders' && (
-              <div className="block md:hidden mb-4 relative shrink-0">
-                {searchQuery.replace(/\D/g, '').length > 0 ? (
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500 animate-pulse" />
-                ) : (
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                )}
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Որոնել ըստ հեռախոսի, ID-ի կամ անվան..."
-                  className="w-full pl-10 pr-9 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-850 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 placeholder:text-slate-400"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            )}
-
+        {/* Scrollable Main View Canvas */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-24 lg:pb-8 bg-slate-50/60">
+          <div className="max-w-[1700px] mx-auto">
             <AnimatePresence mode="wait">
               {activeView === 'orders' && (
                 <motion.div 
@@ -1501,32 +604,19 @@ export default function App() {
                   exit={{ opacity: 0, y: -10 }} 
                   className="flex-1 min-h-0 space-y-4"
                 >
-                  {(!googleUser || !googleToken) && (
-                    <div 
-                      onClick={() => {
-                        setActiveView('google-sheets');
-                        setShowManualTokenForm(true);
-                      }}
-                      className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-100/60 transition group shadow-2xs"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Cloud className="w-4 h-4 text-amber-600 shrink-0 animate-bounce" />
-                        <span className="text-xs font-bold text-amber-800 leading-normal">
-                          📢 Google Sheets-ը միացված չէ։ Սեղմեք այստեղ՝ անհատական Access Token-ով արագ միացնելու կամ սեփական Google Client ID-ն կարգավորելու համար։
-                        </span>
-                      </div>
-                      <div className="text-[10.5px] font-extrabold text-amber-700 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-3xs group-hover:bg-amber-50 transition shrink-0">
-                        Միացնել
-                      </div>
-                    </div>
-                  )}
-
                   <OrderFeed 
-                    orders={filteredOrders}
+                    orders={orders}
                     selectedOrderId={currentOrderId || undefined}
                     onSelectOrder={handleSelectOrder}
                     isLoading={isLoading}
                     searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    onEditOrder={(ord) => {
+                      setCurrentOrderId(ord.id);
+                      setActiveView('edit-order');
+                    }}
                     onOpenReportsPage={() => setActiveView('reports')}
                     onUpdateStatus={handleUpdateStatus}
                     onClearAllOrders={handleClearAllOrders}
@@ -1579,7 +669,7 @@ export default function App() {
                       <p className="text-sm font-bold text-slate-700">Պատվերը չի գտնվել կամ հեռացվել է:</p>
                       <button
                         onClick={() => setActiveView('orders')}
-                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors"
+                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
                       >
                         Վերադառնալ Պատվերների Ցանկին
                       </button>
@@ -1607,7 +697,7 @@ export default function App() {
                       <p className="text-sm font-bold text-slate-700">Պատվերը չի գտնվել:</p>
                       <button
                         onClick={() => setActiveView('orders')}
-                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors"
+                        className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
                       >
                         Վերադառնալ Պատվերների Ցանկին
                       </button>
@@ -1622,421 +712,24 @@ export default function App() {
                 </motion.div>
               )}
 
-
-              {activeView === 'google-sheets' && (
+              {activeView === 'json-database' && (
                 <motion.div 
+                  key="json-database-page"
                   initial={{ opacity: 0, y: 10 }} 
                   animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -10 }}
-                  className="w-full max-w-4xl mx-auto space-y-6"
+                  exit={{ opacity: 0, y: -10 }} 
+                  className="flex-1 min-h-0"
                 >
-                  {/* Google Sheets info header */}
-                  <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-150 shadow-sm flex flex-col md:flex-row items-add sticky top-0 bg-opacity-90 backdrop-blur-md justify-between gap-6">
-                    <div className="flex items-center gap-4.5">
-                      <div className="bg-emerald-50 text-emerald-600 h-14 w-14 rounded-2xl flex items-center justify-center border border-emerald-100">
-                        <Cloud className="w-7 h-7" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm md:text-base font-extrabold text-slate-900 tracking-tight">Google Sheets</h3>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">Կառավարեք և պահպանեք պատվերները անմիջապես Google Աղյուսակներում</p>
-                      </div>
-                    </div>
-                    {googleUser && googleToken && (
-                      <button
-                        onClick={handleGoogleDisconnect}
-                        disabled={spreadsheetLoading}
-                        className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-extrabold rounded-xl transition duration-200 flex items-center gap-1.5 active:scale-95 border border-rose-100"
-                      >
-                        <LogOut className="w-3.5 h-3.5" /> Անջատել Google-ը
-                      </button>
-                    )}
-                  </div>
-
-                  {!googleUser || !googleToken ? (
-                    /* Setup instructions and Google sign-in */
-                    <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-150 shadow-sm text-center max-w-2xl mx-auto flex flex-col items-center justify-center">
-                      <div className="bg-indigo-50 text-indigo-650 h-16 w-16 rounded-[22px] flex items-center justify-center mb-6">
-                        <Lock className="w-8 h-8" />
-                      </div>
-                      <h4 className="text-base font-black text-slate-800 uppercase tracking-wider mb-2">Միացեք Google-ին</h4>
-                      <p className="text-xs text-slate-500 font-medium max-w-md leading-relaxed mb-6">
-                        Միացեք, որպեսզի պատվերները ավտոմատ պահպանվեն և թարմացվեն Google աղյուսակներում:
-                      </p>
-
-                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
-                        <button
-                          onClick={handleGoogleConnect}
-                          disabled={spreadsheetLoading}
-                          className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-50"
-                        >
-                          {spreadsheetLoading ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" /> Միանում է...
-                            </>
-                          ) : (
-                            <>
-                              <Globe className="w-4 h-4" /> Միացնել Google-ը
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => setShowManualTokenForm(!showManualTokenForm)}
-                          className="w-full sm:w-auto px-4 py-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold rounded-xl transition duration-200 flex items-center justify-center gap-1.5"
-                        >
-                          <Key className="w-4 h-4 text-slate-500" /> {showManualTokenForm ? 'Թաքցնել' : 'Անհատական Access Token'}
-                        </button>
-                      </div>
-
-                      {showManualTokenForm && (
-                        <div className="w-full mt-6 p-5 bg-slate-50 rounded-2xl border border-slate-200/80 text-left space-y-5">
-                          {/* 🌟 Official Google Sheets API (via Refresh Token) - NO SCRIPTS */}
-                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-150 rounded-2xl p-5 space-y-4">
-                            <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                              🔑 Պաշտոնական Google API (Առանց Apps Script-ի — Մշտական & Անվտանգ)
-                            </p>
-                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                              Միացեք պաշտոնական Google Sheets API-ով՝ առանց որևէ script տեղադրելու։ Լրացրեք ձեր Google API տվյալները, և համակարգը կապահովի մշտական ավտոմատ թարմացում (Auto-Refresh) առանց pop-up-ների խնդիրների։
-                            </p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Client ID</label>
-                                <input
-                                  type="text"
-                                  placeholder="854020054293-...apps.googleusercontent.com"
-                                  value={apiClientId}
-                                  onChange={(e) => {
-                                    setApiClientId(e.target.value);
-                                    setCustomClientId(e.target.value);
-                                  }}
-                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Client Secret</label>
-                                <input
-                                  type="password"
-                                  placeholder="GOCSPX-..."
-                                  value={apiClientSecret}
-                                  onChange={(e) => setApiClientSecret(e.target.value)}
-                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">OAuth Refresh Token</label>
-                                <input
-                                  type="password"
-                                  placeholder="1//0..."
-                                  value={apiRefreshToken}
-                                  onChange={(e) => setApiRefreshToken(e.target.value)}
-                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Google Sheet ID (կամ URL)</label>
-                                <input
-                                  type="text"
-                                  placeholder="1BxiMVs0XRA5nFMdKv136..."
-                                  value={apiSpreadsheetId}
-                                  onChange={(e) => {
-                                    let val = e.target.value.trim();
-                                    if (val.includes('/d/')) {
-                                      const matches = val.match(/\/d\/([a-zA-Z0-9-_]+)/);
-                                      if (matches && matches[1]) val = matches[1];
-                                    }
-                                    setApiSpreadsheetId(val);
-                                  }}
-                                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-emerald-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-1 text-[10.5px] text-slate-650 bg-white/60 p-3.5 rounded-xl border border-emerald-100">
-                              <p className="font-bold text-emerald-950 mb-1">📋 Ինչպե՞ս ստանալ Refresh Token 30 վայրկյանում.</p>
-                              <ol className="list-decimal list-inside space-y-1 leading-relaxed">
-                                <li>Բացեք <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noreferrer" className="text-emerald-700 font-bold underline">Google OAuth Playground</a>-ը:</li>
-                                <li>Աջ վերևի անկյունում սեղմեք <strong>Gear icon (Կարգավորումներ)</strong>, նշեք <strong>"Use your own OAuth credentials"</strong>, լրացրեք ձեր Client ID և Client Secret-ը։</li>
-                                <li>Ձախ կողմում <strong>Step 1</strong>-ում մուտքագրեք <code>https://www.googleapis.com/auth/spreadsheets</code> և սեղմեք <strong>Authorize APIs</strong>:</li>
-                                <li>Մուտք գործեք ձեր Google հաշիվ, իսկ <strong>Step 2</strong>-ում սեղմեք <strong>Exchange authorization code for tokens</strong>։</li>
-                                <li>Պատճենեք ստացված <strong>Refresh Token</strong>-ը և տեղադրեք այստեղ։</li>
-                              </ol>
-                            </div>
-
-                            <button
-                              onClick={handleRefreshTokenConnect}
-                              disabled={spreadsheetLoading}
-                              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
-                            >
-                              {spreadsheetLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                              Միացնել Պաշտոնական API-ն
-                            </button>
-                          </div>
-
-                          {/* 🚀 Google Apps Script - Bypass Mode */}
-                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-150 rounded-2xl p-5 space-y-4">
-                            <p className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                              🚀 Տարբերակ 2. Միացում Apps Script-ով (Առանց Google Auth-ի)
-                            </p>
-                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                              Տեղադրեք մեր 20-տողանոց Google Apps Script-ը ձեր աղյուսակում և միացրեք URL-ը այստեղ (շատ հեշտ է և bypass է անում Google-ի բոլոր սահմանափակումները)։
-                            </p>
-                            
-                            <div className="bg-slate-900 rounded-xl p-3 text-left relative overflow-hidden group">
-                              <span className="absolute top-2 right-2 text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">Apps Script Կոդ</span>
-                              <pre className="text-[10px] text-emerald-400 font-mono overflow-x-auto max-h-40 leading-relaxed">
-{`function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = sheet.getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var params = JSON.parse(e.postData.contents);
-    if (params.action === 'overwrite') {
-      sheet.clearContents();
-      for (var i = 0; i < params.values.length; i++) {
-        sheet.appendRow(params.values[i]);
-      }
-    } else if (params.action === 'append') {
-      sheet.appendRow(params.values);
-    } else if (params.action === 'update') {
-      var rowIndex = params.rowIndex;
-      if (rowIndex && rowIndex > 0) {
-        var rowValues = params.values;
-        var range = sheet.getRange(rowIndex, 1, 1, rowValues.length);
-        range.setValues([rowValues]);
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}`}
-                              </pre>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                              <input
-                                type="text"
-                                placeholder="https://script.google.com/macros/s/.../exec"
-                                value={appsScriptInput}
-                                onChange={(e) => setAppsScriptInput(e.target.value)}
-                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-indigo-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              />
-                              <button
-                                onClick={handleAppsScriptConnect}
-                                disabled={spreadsheetLoading || !appsScriptInput.trim()}
-                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 shrink-0 cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
-                              >
-                                {spreadsheetLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Միացնել Script-ով'}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 🔑 Simple Access Token - Quick Solution */}
-                          <div className="space-y-3 border-t border-slate-200/60 pt-5">
-                            <p className="text-xs font-bold text-slate-800">
-                              Անհատական Google Access Token (Արագ լուծում)
-                            </p>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                              Եթե ցանկանում եք ժամանակավոր փորձարկել, կարող եք ուղղակի մուտքագրել Google OAuth Access Token-ը այստեղ.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <input
-                                type="password"
-                                placeholder="ya29.a0..."
-                                value={manualTokenInput}
-                                onChange={(e) => setManualTokenInput(e.target.value)}
-                                className="flex-1 px-3.5 py-2.5 text-xs font-mono bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              />
-                              <button
-                                onClick={handleDirectTokenConnect}
-                                disabled={spreadsheetLoading || !manualTokenInput.trim()}
-                                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 shrink-0 cursor-pointer"
-                              >
-                                Միացնել
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-8 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                        <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Անվտանգությունն ապահովված է</span>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Sync controls dashboard */
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      
-                      {/* Left: Account profile and active spreadsheet configuration */}
-                      <div className="md:col-span-1 space-y-6">
-                        
-                        {/* Profile card */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-150 shadow-sm">
-                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Google Հաշիվ</p>
-                          <div className="flex items-center gap-3">
-                            <img 
-                              src={googleUser.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'} 
-                              alt={googleUser.displayName || 'Google User'} 
-                              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-100 shrink-0"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs font-black text-slate-800 truncate leading-none">{googleUser.displayName || 'Օգտատեր'}</p>
-                              <p className="text-[10.5px] text-slate-400 font-medium truncate mt-1">{googleUser.email}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Document setup card */}
-                        <div className="bg-white p-5 rounded-3xl border border-slate-150 shadow-sm space-y-4">
-                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">Աղյուսակի Կարգավորում</p>
-                          
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ընտրել աղյուսակը</label>
-                            {spreadsheets.length === 0 ? (
-                              <p className="text-[10.5px] text-slate-400 font-medium italic">Աղյուսակներ չեն գտնվել Google Drive-ում</p>
-                            ) : (
-                              <select
-                                value={selectedSpreadsheetId}
-                                onChange={(e) => handleSelectSpreadsheet(e.target.value)}
-                                disabled={spreadsheetLoading}
-                                className="w-full text-xs font-bold text-slate-700 bg-slate-50 border border-slate-150 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                              >
-                                <option value="">-- Ընտրել աղյուսակ Drive-ից --</option>
-                                {spreadsheets.map((s) => (
-                                  <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-
-                          <div className="pt-2 text-center border-t border-slate-100/50">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">կամ ստեղծել նորը</p>
-                            <button
-                              onClick={handleCreateNewSpreadsheet}
-                              disabled={spreadsheetLoading}
-                              className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 border border-slate-255 border-dashed rounded-xl text-xs font-bold transition duration-200 flex items-center justify-center gap-1 active:scale-98"
-                            >
-                              <Plus className="w-4 h-4" /> Ստեղծել նոր աղյուսակ
-                            </button>
-                          </div>
-                        </div>
-
-                      </div>
-
-                      {/* Right: Data operations and sync logs */}
-                      <div className="md:col-span-2 space-y-6">
-                        
-                        {/* Selected Spreadsheet information & sync panel */}
-                        <div className="bg-white p-6 rounded-3xl border border-slate-150 shadow-sm space-y-6">
-                          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div>
-                              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Ակտիվ Փաստաթուղթ</p>
-                              <h4 className="text-sm font-black text-slate-800">
-                                {selectedSpreadsheetId ? selectedSpreadsheetName : 'Աղյուսակ ընտրված չէ'}
-                              </h4>
-                              {selectedSpreadsheetId && (
-                                <span className="inline-block text-[9px] font-extrabold bg-emerald-50 text-emerald-600 rounded px-1.5 py-0.5 mt-1.5 font-mono">
-                                  Թերթ՝ {selectedSheetTitle}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {selectedSpreadsheetId && (
-                              <a
-                                href={`https://docs.google.com/spreadsheets/d/${selectedSpreadsheetId}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                referrerPolicy="no-referrer"
-                                className="px-3.5 py-2 bg-emerald-50 text-emerald-650 hover:bg-emerald-100 border border-emerald-100 rounded-xl text-xs font-black transition duration-200 flex items-center gap-1.5"
-                              >
-                                <Link className="w-3.5 h-3.5" /> Բացել
-                              </a>
-                            )}
-                          </div>
-
-                          {selectedSpreadsheetId ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="border border-slate-150 rounded-2xl p-4 space-y-3">
-                                <h5 className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Ներմուծում (Import)</h5>
-                                <p className="text-[10px] text-slate-500 leading-normal font-medium">Բեռնել բոլոր պատվերները Google Sheets-ից և թարմացնել տեղային ցուցակը։</p>
-                                <button
-                                  onClick={handleImportOrders}
-                                  disabled={spreadsheetLoading}
-                                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition duration-200 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
-                                >
-                                  {spreadsheetLoading ? (
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Cloud className="w-3.5 h-3.5" />
-                                  )}
-                                  <span>Բեռնել պատվերները</span>
-                                </button>
-                              </div>
-
-                              <div className="border border-slate-150 rounded-2xl p-4 space-y-3">
-                                <h5 className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Արտահանում (Export)</h5>
-                                <p className="text-[10px] text-slate-500 leading-normal font-medium">Ուղարկել տեղային բոլոր պատվերները աղյուսակի մեջ (կմաքրի նախորդները)։</p>
-                                <button
-                                  onClick={handleExportOrders}
-                                  disabled={spreadsheetLoading}
-                                  className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition duration-200 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-                                >
-                                  {spreadsheetLoading ? (
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Cloud className="w-3.5 h-3.5" />
-                                  )}
-                                  <span>Արտահանել բոլորը</span>
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-8 text-center border border-slate-100 border-dashed rounded-2xl flex flex-col items-center justify-center">
-                              <Cloud className="w-10 h-10 text-slate-300 stroke-[1.5] mb-2" />
-                              <p className="text-xs font-bold text-slate-600 leading-none">Սկսելու համար ընտրեք կամ ստեղծեք Google Sheets</p>
-                              <p className="text-[10px] text-slate-400 mt-1 max-w-sm">Աղյուսակը միացնելուն պես կհայտնվեն ներմուծման և արտահանման ամբողջական կառավարման վահանակները։</p>
-                            </div>
-                          )}
-
-                          {/* Auto Sync and live events tracking */}
-                          {selectedSpreadsheetId && (
-                            <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${autoSync ? 'bg-indigo-50 text-indigo-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
-                                  <RefreshCw className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <p className="text-xs font-black text-slate-800 leading-none">Ինքնաշխատ սինխրոնացում (Auto-Sync)</p>
-                                  <p className="text-[10px] text-slate-400 font-medium mt-1 leading-tight">Յուրաքանչյուր նոր պատվեր կամ կարգավիճակ ակնթարթորեն կգրվի Google Sheets-ում:</p>
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => setAutoSync(!autoSync)}
-                                className={`w-12 h-6.5 rounded-full p-1 transition-colors cursor-pointer focus:outline-none ${autoSync ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                              >
-                                <div className={`w-4.5 h-4.5 rounded-full bg-white shadow transform transition-transform duration-200 ${autoSync ? 'translate-x-5.5' : 'translate-x-0'}`} />
-                              </button>
-                            </div>
-                          )}
-
-                        </div>
-
-                      </div>
-
-                    </div>
-                  )}
-
+                  <JsonDatabasePage 
+                    orders={orders}
+                    onImportOrders={handleImportOrdersFromJson}
+                    onClearDatabase={handleClearAllOrders}
+                    onResetToDemo={handleResetToDemoOrders}
+                    onToast={(type, msg) => {
+                      const toastType = type === 'error' ? 'delete' : type;
+                      addToast(toastType, msg);
+                    }}
+                  />
                 </motion.div>
               )}
 
@@ -2056,8 +749,31 @@ function doPost(e) {
               )}
             </AnimatePresence>
           </div>
-        </div>
-      </main>
+        </main>
+
+        {/* 3. Modern Mobile Bottom Dock & Slide-Over Drawer */}
+        <MobileNav
+          activeView={activeView}
+          setActiveView={setActiveView}
+          ordersCount={orders.length}
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          onOpenScanner={() => {
+            posAudio.playScanBeep();
+            setIsBarcodeScannerOpen(true);
+          }}
+          onExportJson={() => {
+            downloadOrdersAsJsonFile(orders);
+            addToast('success', `Արտահանվել է ${orders.length} պատվեր JSON ֆայլով։`);
+          }}
+          isSoundMuted={isSoundMuted}
+          toggleSoundMute={toggleSoundMute}
+          unreadCount={unreadCount}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onClearAllOrders={handleClearAllOrders}
+          currentTime={currentTime}
+        />
+      </div>
 
       {/* Interactive Barcode & SKU Scanner Modal */}
       <BarcodeScannerModal
@@ -2073,6 +789,12 @@ function doPost(e) {
           setActiveView('create-order');
           addToast('success', `${product.name} ապրանքն ավելացվեց`);
         }}
+      />
+
+      {/* Keyboard Shortcuts Cheat Sheet Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Custom In-App Floating Notification Banner */}
@@ -2101,7 +823,7 @@ function doPost(e) {
               <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
                 activeBannerNotification.type === 'success' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-100' : 
                 activeBannerNotification.type === 'warning' ? 'bg-rose-500 text-white shadow-md shadow-rose-100' : 
-                'bg-indigo-650 text-white shadow-md shadow-indigo-100'
+                'bg-indigo-600 text-white shadow-md shadow-indigo-100'
               }`}>
                 <Bell className="w-4 h-4" />
               </div>
@@ -2128,7 +850,7 @@ function doPost(e) {
                   e.stopPropagation();
                   setActiveBannerNotification(null);
                 }}
-                className="p-1 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-650 self-start transition-all"
+                className="p-1 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-600 self-start transition-all cursor-pointer"
               >
                 <CloseIcon className="w-3.5 h-3.5" />
               </button>
@@ -2137,386 +859,7 @@ function doPost(e) {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Dock Bar (Visible only on mobile screen widths < md) */}
-      <nav className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 z-40 px-3 py-1.5 flex items-center justify-around md:hidden shadow-lg shadow-slate-900/10">
-        <button
-          onClick={() => {
-            setActiveView('orders');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-            activeView === 'orders' || activeView === 'view-order' || activeView === 'edit-order'
-              ? 'text-indigo-600 font-extrabold'
-              : 'text-slate-500 font-medium hover:text-slate-800'
-          }`}
-        >
-          <div className="relative">
-            <Layers className="w-5 h-5" />
-            {orders.length > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-indigo-600 text-white text-[9px] font-black font-mono px-1.5 py-0.2 rounded-full border border-white">
-                {orders.length}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] tracking-tight">Պատվերներ</span>
-        </button>
-
-        {/* Highlighted Primary Create Button */}
-        <button
-          onClick={() => {
-            posAudio.playScanBeep();
-            setActiveView('create-order');
-            setIsMobileMenuOpen(false);
-          }}
-          className="flex flex-col items-center justify-center gap-0.5 -mt-5 py-2.5 px-4 bg-gradient-to-tr from-indigo-700 via-indigo-600 to-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-300 active:scale-95 transition-all cursor-pointer ring-4 ring-white"
-        >
-          <Plus className="w-5 h-5 stroke-[3]" />
-          <span className="text-[9.5px] font-black tracking-wider uppercase">Գրանցել</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveView('dashboard');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-            activeView === 'dashboard' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 font-medium hover:text-slate-800'
-          }`}
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Վիճակ</span>
-        </button>
-
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-            isMobileMenuOpen ? 'text-indigo-600 font-extrabold' : 'text-slate-500 font-medium hover:text-slate-800'
-          }`}
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Մենյու</span>
-        </button>
-      </nav>
-
-      {/* Mobile Menu Drawer Modal Sheet */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-[100] md:hidden">
-            {/* Backdrop Mask */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Slide-Up Sheet */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="absolute bottom-0 inset-x-0 bg-white rounded-t-[32px] border-t border-slate-200 shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar text-left flex flex-col"
-            >
-              {/* Sheet Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="bg-indigo-600 h-9 w-9 rounded-xl flex items-center justify-center text-white shadow-xs shadow-indigo-200 shrink-0">
-                    <Layers className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-black text-slate-900 tracking-tight text-base leading-none">tab.am POS</span>
-                      <span className="text-[9px] font-extrabold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200">Առցանց</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Արագ Մենյու և Կառավարում</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer active:scale-95"
-                >
-                  <CloseIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Mobile Fast Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (e.target.value && activeView !== 'orders') {
-                      setActiveView('orders');
-                    }
-                  }}
-                  placeholder="Որոնել պատվեր, հեռախոս կամ ID..."
-                  className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200/90 rounded-2xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <CloseIcon className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Navigation Grid / List */}
-              <div className="grid grid-cols-1 gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    posAudio.playScanBeep();
-                    setActiveView('create-order');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center justify-between p-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs transition-all shadow-sm active:scale-98 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-black text-sm">➕ Գրանցել Նոր Պատվեր</div>
-                      <div className="text-[10px] text-indigo-100 font-medium">Ստեղծել նոր պատվեր դրամարկղում</div>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-indigo-200" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveView('orders');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98 cursor-pointer ${
-                    activeView === 'orders' ? 'bg-indigo-50/80 border-indigo-200 text-indigo-950' : 'bg-slate-50 border-slate-200/80 text-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Layers className="w-4 h-4 text-indigo-600" />
-                    <span>📦 Պատվերների Ցանկ</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-lg text-[10px] font-mono font-black">
-                    {orders.length} պատվեր
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveView('dashboard');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98 cursor-pointer ${
-                    activeView === 'dashboard' ? 'bg-indigo-50/80 border-indigo-200 text-indigo-950' : 'bg-slate-50 border-slate-200/80 text-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <LayoutDashboard className="w-4 h-4 text-indigo-600" />
-                    <span>📊 Վիճակագրություն & Վաճառքներ</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveView('google-sheets');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98 cursor-pointer ${
-                    activeView === 'google-sheets' ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200/80 text-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Cloud className="w-4 h-4 text-emerald-600" />
-                    <span>🟢 Google Sheets Սինխրոնացում</span>
-                  </div>
-                  {googleUser && googleToken ? (
-                    <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg">Ակտիվ է</span>
-                  ) : (
-                    <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-lg">Անջատված</span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    posAudio.playScanBeep();
-                    setIsBarcodeScannerOpen(true);
-                  }}
-                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-800 transition-all active:scale-98 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <ScanLine className="w-4 h-4 text-indigo-600" />
-                    <span>⚡ Շտրիխ-Կոդի / SKU Սկաներ</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-slate-400">Կամերա</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    posAudio.playScanBeep();
-                    setActiveView('reports');
-                  }}
-                  className="w-full flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-2xl text-xs font-bold text-emerald-950 transition-all active:scale-98 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-emerald-600" />
-                    <span>📄 PDF Հաշվետվությունների Էջ</span>
-                  </div>
-                  <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-lg">3 Ձևաչափ</span>
-                </button>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    onClick={() => {
-                      toggleSoundMute();
-                    }}
-                    className="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700 active:scale-95 cursor-pointer"
-                  >
-                    {isSoundMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-indigo-600" />}
-                    <span>{isSoundMuted ? 'Ձայնը Անջատված' : 'Ձայնը Միացված'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsNotificationsOpen(!isNotificationsOpen);
-                    }}
-                    className="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700 active:scale-95 cursor-pointer relative"
-                  >
-                    <Bell className="w-4 h-4 text-indigo-600" />
-                    <span>Ծանուցումներ</span>
-                    {unreadCount > 0 && (
-                      <span className="ml-1 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleClearAllOrders();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-2xl text-xs font-bold transition-all active:scale-98 cursor-pointer mt-2"
-                >
-                  <Trash2 className="w-4 h-4 text-rose-600" />
-                  <span>🗑️ Մաքրել Բոլոր Պատվերները (0)</span>
-                </button>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 text-center text-[10px] text-slate-400 font-bold flex items-center justify-between">
-                <span>tab.am Cloud POS System v2.5</span>
-                <span className="font-mono text-slate-500">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* MANDATORY GOOGLE AUTH & SHEETS SETUP GATE */}
-      {(!googleToken || !selectedSpreadsheetId) && !isLoading && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-100 p-6 sm:p-8 space-y-6 text-center relative"
-          >
-            <div className="mx-auto w-16 h-16 bg-gradient-to-tr from-emerald-500 via-indigo-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <Cloud className="w-8 h-8 stroke-[2.2]" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black rounded-full uppercase tracking-wider">
-                ⚠️ Պարտադիր Քայլ • Mandatory Setup
-              </span>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                tab.am POS • Google Account & Sheets Միացում
-              </h2>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
-                Ծրագիրն աշխատում է Google Sheets-ի հետ իրական ժամանակում (Real-time)։ Սկսելու համար խնդրում ենք մուտք գործել Google հաշվով և ընտրել կամ ստեղծել Google Sheets աղյուսակ։
-              </p>
-            </div>
-
-            {!googleUser || !googleToken ? (
-              <div className="space-y-3 pt-2">
-                <button
-                  onClick={handleGoogleConnect}
-                  disabled={spreadsheetLoading}
-                  className="w-full py-3.5 px-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-3 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
-                >
-                  {spreadsheetLoading ? (
-                    <RefreshCw className="w-5 h-5 animate-spin text-white" />
-                  ) : (
-                    <Globe className="w-5 h-5 text-indigo-200" />
-                  )}
-                  <span>🔑 Մուտք Գործել Google Հաշվով</span>
-                </button>
-                <p className="text-[10.5px] text-slate-400 font-medium">
-                  Մուտք գործելուց հետո համակարգը ավտոմատ կպատրաստի ձեր Google Sheets աղյուսակը։
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4 pt-2 text-left bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-xs font-bold text-slate-800">Մուտք է գործված՝</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-indigo-600 truncate max-w-[180px]">
-                    {googleUser.email || googleUser.displayName || 'Google User'}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
-                    Ընտրել կամ Ստեղծել Google Sheet Աղյուսակ
-                  </label>
-
-                  {spreadsheets.length > 0 && (
-                    <select
-                      value={selectedSpreadsheetId}
-                      onChange={(e) => handleSelectSpreadsheet(e.target.value)}
-                      disabled={spreadsheetLoading}
-                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="">-- Ընտրել առկա աղյուսակը --</option>
-                      {spreadsheets.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          📊 {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  <button
-                    onClick={handleCreateNewSpreadsheet}
-                    disabled={spreadsheetLoading}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
-                  >
-                    {spreadsheetLoading ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                    )}
-                    <span>✨ Ստեղծել Նոր Google Sheet Աղյուսակ (tab.am POS)</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
-
-      {/* Toast alert system container */}
+      {/* Global Toast System */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );

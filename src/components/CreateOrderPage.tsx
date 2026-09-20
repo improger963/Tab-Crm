@@ -15,7 +15,8 @@ import {
   calculateItemLineSubtotal, 
   calculateItemDiscount, 
   calculateItemLineTotal,
-  generateNextNumericOrderId
+  generateNextNumericOrderId,
+  getTodayLocalYMD
 } from '../lib/storage';
 import { posAudio } from '../lib/posAudio';
 
@@ -40,7 +41,7 @@ export default function CreateOrderPage({ onSave, onCancel }: CreateOrderPagePro
   const [formData, setFormData] = useState({
     customerName: '',
     phoneNumber: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: getTodayLocalYMD(),
     deliveryDate: '',
     address: '',
     saleType: SaleType.ON_SITE,

@@ -88,6 +88,16 @@
   .animate-pulse-ring {
     animation: pulse-ring 2s infinite ease-in-out;
   }
+
+  .receipt-edge {
+    background-image: radial-gradient(circle at 10px 0, transparent 0, transparent 6px, #ffffff 6px);
+    background-size: 20px 20px;
+    background-repeat: repeat-x;
+  }
+  
+  .luxury-gradient-border {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.05) 50%, rgba(244, 63, 94, 0.1) 100%);
+  }
 }
 
 .leaflet-container {
@@ -96,18 +106,106 @@
 }
 
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 0mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   body * {
     visibility: hidden;
   }
-  #printable-order-slip, #printable-order-slip * {
+
+  #printable-order-slip, #printable-order-slip *,
+  #pos-thermal-receipt, #pos-thermal-receipt *,
+  #report-document-sheet, #report-document-sheet * {
     visibility: visible;
   }
+
+  #pos-thermal-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 3mm 2mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 10.5px !important;
+    line-height: 1.3 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #pos-thermal-receipt * {
+    color: #000000 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  #pos-thermal-receipt .order-id-badge {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    display: inline-block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #pos-thermal-receipt table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #pos-thermal-receipt th {
+    border-bottom: 1.5px solid #000000 !important;
+    font-weight: 900 !important;
+    color: #000000 !important;
+  }
+
+  #pos-thermal-receipt td {
+    color: #000000 !important;
+  }
+
+  #pos-thermal-receipt .receipt-barcode div > div {
+    background: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   #printable-order-slip {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    padding: 0;
-    margin: 0;
+    max-width: 80mm;
+    padding: 8px;
+    margin: 0 auto;
+  }
+
+  #report-document-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
   }
 }

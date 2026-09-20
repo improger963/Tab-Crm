@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus, PaymentStatus, SaleType, PaymentMethod } from '../types';
 import { posAudio } from '../lib/posAudio';
+import { parseDateSafe, toLocalYMD, getTodayLocalYMD } from '../lib/storage';
 
 interface DeliveryDashboardProps {
   orders: Order[];
@@ -47,47 +48,6 @@ const PAYMENT_COLORS = {
   [PaymentMethod.TRANSFER]: '#06b6d4', // cyan
 };
 
-// Helper for robust date parsing in various formats
-const parseDateSafe = (dateStr: any): Date | null => {
-  if (!dateStr) return null;
-  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
-  const s = String(dateStr).trim();
-  if (!s) return null;
-
-  const parsed = new Date(s);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
-  }
-
-  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1;
-    const year = parseInt(dmyMatch[3], 10);
-    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
-    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
-    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
-
-    const d = new Date(year, month, day, hour, min, sec);
-    if (!isNaN(d.getTime())) {
-      return d;
-    }
-  }
-
-  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slashMatch) {
-    const day = parseInt(slashMatch[1], 10);
-    const month = parseInt(slashMatch[2], 10) - 1;
-    const year = parseInt(slashMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) {
-      return d;
-    }
-  }
-
-  return null;
-};
-
 export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDashboardProps) {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
   const [copiedSku, setCopiedSku] = useState<string | null>(null);
@@ -99,23 +59,24 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
     setTimeout(() => setCopiedSku(null), 1800);
   };
 
-  // Filter orders by selected time
+  // Filter orders by selected time using local timezone calculations
   const filteredOrders = useMemo(() => {
     if (timeFilter === 'all') return orders;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayLocalYMD();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = toLocalYMD(yesterday);
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    weekAgo.setHours(0, 0, 0, 0);
 
     return orders.filter(order => {
-      const parsedDate = parseDateSafe(order.purchaseDate);
+      const parsedDate = parseDateSafe(order.purchaseDate) || parseDateSafe(order.deliveryDate);
       if (!parsedDate) return false;
 
-      const dateStrYMD = parsedDate.toISOString().split('T')[0];
+      const dateStrYMD = toLocalYMD(parsedDate);
 
       if (timeFilter === 'today') {
         return dateStrYMD === todayStr;
@@ -137,7 +98,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const isoDate = d.toISOString().split('T')[0];
+      const isoDate = toLocalYMD(d);
       const localDate = d.toLocaleDateString();
 
       last7Days.push({
@@ -149,9 +110,9 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
 
     return last7Days.map(day => {
       const dayOrders = orders.filter(o => {
-        const parsedDate = parseDateSafe(o.purchaseDate);
+        const parsedDate = parseDateSafe(o.purchaseDate) || parseDateSafe(o.deliveryDate);
         if (!parsedDate) return false;
-        const dateStrYMD = parsedDate.toISOString().split('T')[0];
+        const dateStrYMD = toLocalYMD(parsedDate);
         const dateStrLocal = parsedDate.toLocaleDateString();
         return dateStrYMD === day.isoDate || dateStrLocal === day.localDate;
       });
