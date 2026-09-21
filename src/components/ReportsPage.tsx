@@ -1,4 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, MODAL_SHELL } from '../lib/motionPresets';
+import SelectField from './SelectField';
 import { Order, OrderStatus, SaleType, PaymentStatus, PaymentMethod, OrderItem } from '../types';
 import { 
   FileText, 
@@ -29,6 +32,7 @@ import {
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { posAudio } from '../lib/posAudio';
+import { parseDateSafe } from '../lib/storage';
 
 interface ReportsPageProps {
   orders: Order[];
@@ -38,52 +42,8 @@ interface ReportsPageProps {
 type ReportDocType = 'delivery' | 'pickup' | 'supplier' | 'financial' | 'invoice';
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'this-week' | 'this-month' | 'custom';
 
-// Safe date parsing helper
-const parseDateSafe = (dateStr: any): Date | null => {
-  if (!dateStr) return null;
-  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
-  const s = String(dateStr).trim();
-  if (!s) return null;
-
-  // Direct Date parse (ISO or standardized)
-  const parsed = new Date(s);
-  if (!isNaN(parsed.getTime())) return parsed;
-
-  // Armenian or standard DD.MM.YYYY
-  const dmyMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1;
-    const year = parseInt(dmyMatch[3], 10);
-    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
-    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
-    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
-    const d = new Date(year, month, day, hour, min, sec);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // DD/MM/YYYY
-  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slashMatch) {
-    const day = parseInt(slashMatch[1], 10);
-    const month = parseInt(slashMatch[2], 10) - 1;
-    const year = parseInt(slashMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // YYYY-MM-DD
-  const ymdMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (ymdMatch) {
-    const year = parseInt(ymdMatch[1], 10);
-    const month = parseInt(ymdMatch[2], 10) - 1;
-    const day = parseInt(ymdMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  return null;
-};
+// Shared robust date parser lives in lib/storage.ts (parseDateSafe):
+// handles YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY and ISO fallback in one place.
 
 const formatDateArm = (date: Date): string => {
   const d = String(date.getDate()).padStart(2, '0');
@@ -557,14 +517,14 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
     <div className="space-y-5">
       
       {/* 1. TOP SYNCHRONOUS APP HEADER BANNER */}
-      <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs">
+      <div className="solid-card p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Breadcrumb & Title */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToOrders}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-200"
+              className="btn btn-ghost"
               title="Վերադառնալ Պատվերներին"
             >
               <ArrowLeft className="w-4 h-4 text-slate-600" />
@@ -592,7 +552,13 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           </div>
 
           {/* Action Toolbar */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="relative flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Honest indeterminate progress while html2canvas/jsPDF render */}
+            {isGeneratingPdf && (
+              <div className="absolute -bottom-1.5 left-0 right-0 pointer-events-none">
+                <div className="preloader-bar" />
+              </div>
+            )}
             
             {/* Copy Messenger Text */}
             <button
@@ -617,7 +583,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             {/* Excel / CSV Export */}
             <button
               onClick={handleExportCsv}
-              className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-emerald-200"
+              className="btn btn-md btn-soft-success"
               title="Արտահանել Excel / CSV ֆայլ"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
@@ -658,7 +624,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Metric 1: Revenue */}
-        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Հասույթ</span>
             <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
@@ -678,7 +644,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         </div>
 
         {/* Metric 2: Orders Count */}
-        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Պատվերների Քանակ</span>
             <span className="p-2 bg-indigo-50 text-primary-ink rounded-xl">
@@ -698,7 +664,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         </div>
 
         {/* Metric 3: SKU & Units Total */}
-        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ապրանքների Քանակ</span>
             <span className="p-2 bg-amber-50 text-amber-700 rounded-xl">
@@ -718,7 +684,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         </div>
 
         {/* Metric 4: Cash vs Card */}
-        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Վճարումներ</span>
             <span className="p-2 bg-sky-50 text-sky-700 rounded-xl">
@@ -750,7 +716,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             posAudio.playScanBeep();
             setActiveDocType('delivery');
           }}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer relative overflow-hidden ${
             activeDocType === 'delivery'
               ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
               : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -778,7 +744,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             posAudio.playScanBeep();
             setActiveDocType('pickup');
           }}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer relative overflow-hidden ${
             activeDocType === 'pickup'
               ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
               : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -806,7 +772,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             posAudio.playScanBeep();
             setActiveDocType('supplier');
           }}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer relative overflow-hidden ${
             activeDocType === 'supplier'
               ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
               : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -834,7 +800,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             posAudio.playScanBeep();
             setActiveDocType('financial');
           }}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer relative overflow-hidden ${
             activeDocType === 'financial'
               ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
               : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -862,7 +828,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             posAudio.playScanBeep();
             setActiveDocType('invoice');
           }}
-          className={`col-span-2 sm:col-span-1 p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+          className={`col-span-2 sm:col-span-1 p-3.5 rounded-2xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer relative overflow-hidden ${
             activeDocType === 'invoice'
               ? 'bg-primary border-white/20 text-white shadow-md ring-2 ring-white/15'
               : 'bg-surface border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -912,7 +878,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   posAudio.playScanBeep();
                   setDatePreset(preset.id as DateFilterPreset);
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all active:scale-[0.97] cursor-pointer ${
                   datePreset === preset.id
                     ? 'bg-ink-inverse text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
@@ -925,7 +891,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
 
           {/* Custom Date Range Inputs */}
           {datePreset === 'custom' && (
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl text-xs">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl text-xs animate-rise-in">
               <input
                 type="date"
                 value={customStartDate}
@@ -949,7 +915,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <span className="text-2xs font-bold text-slate-500 px-1.5">Մասշտաբ՝</span>
             <button
               onClick={() => setZoomLevel(80)}
-              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
+              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
                 zoomLevel === 80 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -957,7 +923,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             </button>
             <button
               onClick={() => setZoomLevel(100)}
-              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
+              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
                 zoomLevel === 100 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -965,7 +931,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             </button>
             <button
               onClick={() => setZoomLevel(120)}
-              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all ${
+              className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
                 zoomLevel === 120 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -992,7 +958,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1002,51 +968,52 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           {/* Status Filter */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 font-bold text-xs">Կարգավիճակ՝</span>
-            <select
+            <SelectField
               aria-label="Կարգավիճակ"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
+              onChange={(v) => setStatusFilter(v)}
+              size="sm"
             >
               <option value="ALL">Բոլորը</option>
               {Object.values(OrderStatus).map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
 
           {/* Sale Type Filter */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 font-bold text-xs">Տեսակ՝</span>
-            <select
+            <SelectField
               aria-label="Տեսակ"
               value={saleTypeFilter}
-              onChange={(e) => setSaleTypeFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40"
+              onChange={(v) => setSaleTypeFilter(v)}
+              size="sm"
             >
               <option value="ALL">Բոլոր Տիպերը</option>
               {Object.values(SaleType).map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
 
           {/* If Invoice Mode, Picker for Order */}
           {activeDocType === 'invoice' && filteredOrders.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-xs animate-rise-in">
               <span className="text-primary-ink font-bold text-xs">Պատվեր՝</span>
-              <select
+              <SelectField
                 aria-label="Պատվեր"
                 value={selectedInvoiceOrderId || (filteredOrders[0] ? filteredOrders[0].id : '')}
-                onChange={(e) => setSelectedInvoiceOrderId(e.target.value)}
-                className="bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold px-2.5 py-1.5 rounded-xl text-xs focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 font-mono"
+                onChange={(v) => setSelectedInvoiceOrderId(v)}
+                size="sm"
+                className="font-mono"
               >
                 {filteredOrders.map(o => (
                   <option key={o.id} value={o.id}>
                     #{o.id} — {o.customerName || 'Անհայտ'} ({o.totalAmount.toLocaleString()} ֏)
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </div>
           )}
 
@@ -1054,7 +1021,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
           {(datePreset !== 'all' || statusFilter !== 'ALL' || saleTypeFilter !== 'ALL' || searchQuery) && (
             <button
               onClick={handleResetFilters}
-              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-all border border-rose-200 cursor-pointer"
+              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-all active:scale-95 border border-rose-200 cursor-pointer"
             >
               Մաքրել ֆիլտրերը
             </button>
@@ -1069,12 +1036,12 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         
         <div 
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-          className="transition-transform duration-200 ease-out"
+          className="transition-transform duration-200 ease-premium"
         >
           {/* THE PRINTABLE / PDF SHEET */}
           <div 
             id="report-document-sheet" 
-            className="w-[210mm] min-h-[297mm] bg-surface text-slate-900 p-8 sm:p-12 shadow-2xl rounded-sm border border-slate-200 text-xs leading-relaxed flex flex-col justify-between"
+            className="w-[210mm] min-h-[297mm] bg-surface text-slate-900 p-8 sm:p-12 shadow-raised rounded-sm border border-slate-200 text-xs leading-relaxed flex flex-col justify-between"
           >
             <div>
               
@@ -1532,9 +1499,19 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
       </div>
 
       {/* 6. EMAIL MODAL */}
-      {isEmailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px]">
-          <div className="bg-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200/80 animate-in fade-in zoom-in-95">
+      <AnimatePresence>
+        {isEmailModalOpen && (
+          <motion.div
+            {...MODAL_BACKDROP}
+            className="modal-backdrop"
+            onClick={(e) => { if (e.target === e.currentTarget) setIsEmailModalOpen(false); }}
+          >
+            <motion.div
+              {...MODAL_SHELL}
+              role="dialog"
+              aria-modal="true"
+              className="modal-shell max-w-lg w-full p-6"
+            >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Mail className="w-5 h-5 text-primary-ink" />
@@ -1542,7 +1519,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
               </h3>
               <button
                 onClick={() => setIsEmailModalOpen(false)}
-                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100"
+                className="icon-btn"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1558,7 +1535,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   placeholder="example@gmail.com"
                   value={emailRecipient}
                   onChange={(e) => setEmailRecipient(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface"
+                  className="input-field"
                 />
               </div>
 
@@ -1569,7 +1546,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface"
+                  className="input-field"
                 />
               </div>
 
@@ -1580,7 +1557,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                   rows={6}
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-primary-ink focus:ring-2 focus:ring-primary/40 focus:bg-surface resize-none"
+                  className="input-field font-mono resize-none"
                 />
               </div>
 
@@ -1588,22 +1565,23 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
                 <button
                   type="button"
                   onClick={() => setIsEmailModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
+                  className="btn btn-soft w-full sm:w-auto"
                 >
                   Չեղարկել
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary-strong text-white text-xs font-semibold rounded-lg shadow-sm shadow-indigo-600/20 flex items-center gap-2 active:scale-[0.98] transition-all"
+                  className="btn btn-primary w-full sm:w-auto"
                 >
                   {emailSentSuccess ? <Check className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
                   <span>{emailSentSuccess ? 'Ուղարկվեց' : 'Ուղարկել'}</span>
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

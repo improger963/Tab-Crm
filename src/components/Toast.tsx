@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { EASE_IN_FAST } from '../lib/motionPresets';
 import { CheckCircle2, Save, Trash2, AlertCircle, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'save' | 'delete' | 'warning';
@@ -27,24 +28,24 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onRemove }) => {
         {toasts.map((toast) => (
           <motion.div
             key={toast.id}
-            initial={{ opacity: 0, y: -20, scale: 0.92, filter: "blur(4px)" }}
+            initial={{ opacity: 0, y: -18, scale: 0.95, filter: "blur(4px)" }}
             animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: 15, scale: 0.95, transition: { duration: 0.15 } }}
-            transition={{ type: "spring", damping: 20, stiffness: 380 }}
+            exit={{ opacity: 0, y: 12, scale: 0.96, transition: { duration: 0.16, ease: EASE_IN_FAST } }}
+            transition={{ type: "spring", damping: 28, stiffness: 420, mass: 0.9 }}
             className="pointer-events-auto w-full"
           >
             <div className={`
               flex items-center gap-4 px-5 py-4 rounded-2xl border backdrop-blur-xl
-              shadow-lg transition-all duration-300
+              shadow-popover transition-all duration-300
               ${toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200/70 text-emerald-950' : ''}
               ${toast.type === 'save' ? 'bg-indigo-50/95 border-indigo-200/70 text-indigo-950' : ''}
               ${toast.type === 'delete' ? 'bg-rose-50/95 border-rose-200/70 text-rose-950' : ''}
               ${toast.type === 'warning' ? 'bg-amber-50/95 border-amber-200/80 text-amber-950' : ''}
             `}>
               <motion.div 
-                initial={{ scale: 0.5, rotate: -25 }}
+                initial={{ scale: 0.6, rotate: -12 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 450, damping: 15, delay: 0.05 }}
+                transition={{ type: "spring", stiffness: 500, damping: 26, delay: 0.05 }}
                 className={`
                   h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
                   ${toast.type === 'success' ? 'bg-success text-white' : ''}

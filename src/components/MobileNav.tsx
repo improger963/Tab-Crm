@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, EASE_PREMIUM, EASE_IN_FAST } from '../lib/motionPresets';
 import { 
   Layers, 
   LayoutDashboard, 
@@ -61,7 +62,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     <>
       {/* 1. Sleek Mobile Bottom Dock (Always visible on mobile/tablet) */}
       <nav 
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/[0.97] backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-2px_20px_rgb(var(--shadow-rgb)/0.06)] px-2 pt-1.5 pb-safe flex items-center justify-around select-none"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/[0.97] backdrop-blur-xl border-t border-slate-200/50 shadow-up px-2 pt-1.5 pb-safe flex items-center justify-around select-none"
         aria-label="Ստորին նավիգացիա"
       >
         {/* Orders */}
@@ -69,22 +70,20 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           type="button"
           onClick={() => setActiveView('orders')}
           aria-current={isOrdersActive ? 'page' : undefined}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 active:scale-[0.94] cursor-pointer relative ${
             isOrdersActive ? 'text-primary-ink font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
           <div className="relative">
             <Layers className="w-5 h-5" aria-hidden="true" />
             {ordersCount > 0 && (
-              <span className="absolute -top-1 -right-2.5 px-1 py-0.5 bg-primary text-white rounded-full text-2xs font-mono font-bold" aria-hidden="true">
+              <span className="absolute -top-1 -right-2.5 px-1 py-0.5 bg-primary text-white rounded-full text-2xs font-mono font-bold tabular-nums" aria-hidden="true">
                 {ordersCount}
               </span>
             )}
           </div>
           <span className="text-2xs">Պատվերներ</span>
-          {isOrdersActive && (
-            <span className="w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all" aria-hidden="true" />
-          )}
+          <span className={`w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all duration-300 ease-premium ${isOrdersActive ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} aria-hidden="true" />
         </button>
 
         {/* Analytics */}
@@ -92,15 +91,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           type="button"
           onClick={() => setActiveView('dashboard')}
           aria-current={activeView === 'dashboard' ? 'page' : undefined}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 active:scale-[0.94] cursor-pointer relative ${
             activeView === 'dashboard' ? 'text-primary-ink font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" aria-hidden="true" />
           <span className="text-2xs">Վիճակ</span>
-          {activeView === 'dashboard' && (
-            <span className="w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all" aria-hidden="true" />
-          )}
+          <span className={`w-4 h-[2px] rounded-full bg-primary absolute bottom-0.5 transition-all duration-300 ease-premium ${activeView === 'dashboard' ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} aria-hidden="true" />
         </button>
 
         {/* Center: "Գրանցել" Elevated Action */}
@@ -121,7 +118,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           type="button"
           onClick={() => setActiveView('json-database')}
           aria-current={activeView === 'json-database' ? 'page' : undefined}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 active:scale-[0.94] cursor-pointer relative ${
             activeView === 'json-database' ? 'text-amber-700 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
@@ -130,9 +127,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse absolute -top-0.5 -right-0.5" aria-hidden="true" />
           </div>
           <span className="text-2xs">Բազա</span>
-          {activeView === 'json-database' && (
-            <span className="w-4 h-[2px] rounded-full bg-amber-500 absolute bottom-0.5 transition-all" aria-hidden="true" />
-          )}
+          <span className={`w-4 h-[2px] rounded-full bg-amber-500 absolute bottom-0.5 transition-all duration-300 ease-premium ${activeView === 'json-database' ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} aria-hidden="true" />
         </button>
 
         {/* Reports */}
@@ -140,15 +135,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           type="button"
           onClick={() => setActiveView('reports')}
           aria-current={activeView === 'reports' ? 'page' : undefined}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 active:scale-[0.94] cursor-pointer relative ${
             activeView === 'reports' ? 'text-emerald-700 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
           }`}
         >
           <FileText className="w-5 h-5" aria-hidden="true" />
           <span className="text-2xs">Հաշվետվություն</span>
-          {activeView === 'reports' && (
-            <span className="w-4 h-[2px] rounded-full bg-emerald-500 absolute bottom-0.5 transition-all" aria-hidden="true" />
-          )}
+          <span className={`w-4 h-[2px] rounded-full bg-emerald-500 absolute bottom-0.5 transition-all duration-300 ease-premium ${activeView === 'reports' ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} aria-hidden="true" />
         </button>
       </nav>
 
@@ -158,20 +151,17 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Կառավարման մենյուն">
             {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={onClose}
+              {...MODAL_BACKDROP}
               className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+              onClick={onClose}
             />
 
             {/* Drawer Sheet */}
             <motion.div
               initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="absolute inset-y-0 left-0 max-w-xs w-full bg-surface/98 backdrop-blur-xl shadow-[4px_0_40px_rgba(0,0,0,0.08)] flex flex-col z-10"
+              animate={{ x: 0, transition: { duration: 0.3, ease: EASE_PREMIUM } }}
+              exit={{ x: '-100%', transition: { duration: 0.22, ease: EASE_IN_FAST } }}
+              className="absolute inset-y-0 left-0 max-w-xs w-full bg-surface/98 backdrop-blur-xl shadow-drawer flex flex-col z-10"
             >
               {/* Header */}
               <div className="p-4 border-b border-slate-100/80 flex items-center justify-between">

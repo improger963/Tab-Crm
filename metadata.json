@@ -1,11 +1,5 @@
 {
   "name": "tab.am",
   "description": "tab.am - Խանութի պատվերների գրանցում, POS դրամարկղի կտրոնների տպում, առաքումների կառավարում և տեղային JSON բազայի պահպանում",
-  "requestFramePermissions": [
-    "geolocation",
-    "camera"
-  ],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "requestFramePermissions": []
 }

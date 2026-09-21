@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, MODAL_SHELL } from '../lib/motionPresets';
 import { Keyboard, X, Command, Sparkles, Layers, FileText, LayoutDashboard, Database, Plus, ScanLine, Search, Printer } from 'lucide-react';
 import { posAudio } from '../lib/posAudio';
 
@@ -9,8 +10,6 @@ interface KeyboardShortcutsModalProps {
 }
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
   const shortcutGroups = [
     {
       title: 'Էջերի Արագ Անցում (Navigation)',
@@ -36,21 +35,21 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
 
   return (
     <AnimatePresence>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px]"
+      {isOpen && (
+      <motion.div
+        {...MODAL_BACKDROP}
+        className="modal-backdrop"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          {...MODAL_SHELL}
           role="dialog"
           aria-modal="true"
           aria-labelledby="shortcuts-title"
-          className="bg-surface rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+          className="modal-shell w-full max-w-lg max-h-[90vh]"
         >
           {/* Modal Header */}
-          <div className="px-5 py-3.5 bg-ink-inverse text-white flex items-center justify-between">
+          <div className="modal-header-dark px-5 py-3.5">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-white/10 rounded-lg border border-white/15">
                 <Keyboard className="w-[18px] h-[18px] text-indigo-400" aria-hidden="true" />
@@ -86,7 +85,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                     return (
                       <div 
                         key={sIdx}
-                        className="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors"
+                        className="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors animate-rise-in"
+                        style={{ animationDelay: `${Math.min(gIdx * 6 + sIdx, 12) * 0.03}s` }}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <Icon className="w-4 h-4 text-primary-ink shrink-0" aria-hidden="true" />
@@ -116,13 +116,14 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 posAudio.playScanBeep();
                 onClose();
               }}
-              className="btn btn-md btn-dark"
+              className="btn btn-md btn-dark active:scale-[0.98]"
             >
               Փակել
             </button>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+      )}
     </AnimatePresence>
   );
 };

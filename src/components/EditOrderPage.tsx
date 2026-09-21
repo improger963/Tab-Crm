@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import SelectField from './SelectField';
 import { 
   Plus, Trash2, ShoppingBag, Truck, Store, 
   User, Phone, MapPin, Calendar, CheckCircle2, 
@@ -308,15 +308,13 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+    /* Page enter/exit is driven once by App's PAGE_VARIANTS wrapper. */
+    <div 
       className="max-w-5xl mx-auto space-y-4 sm:space-y-6 pb-36 sm:pb-32 px-1 sm:px-0"
     >
       {/* Global Validation Alert */}
       {Object.keys(errors).length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 p-3.5 sm:p-4 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold shadow-xs">
+        <div className="bg-rose-50 border border-rose-200 p-3.5 sm:p-4 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold shadow-xs animate-rise-in">
           <AlertCircle className="w-5 h-5 text-danger-edge shrink-0" />
           <span>Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:</span>
         </div>
@@ -356,7 +354,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
               posAudio.playScanBeep();
               setFormData(prev => ({ ...prev, saleType: SaleType.ON_SITE }));
             }}
-            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all hover:-translate-y-px active:scale-[0.99] flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
               formData.saleType === SaleType.ON_SITE 
                 ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-primary/25' 
                 : 'border-slate-200 hover:border-slate-300 bg-surface'
@@ -384,7 +382,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
               posAudio.playScanBeep();
               setFormData(prev => ({ ...prev, saleType: SaleType.DELIVERY }));
             }}
-            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all hover:-translate-y-px active:scale-[0.99] flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
               formData.saleType === SaleType.DELIVERY 
                 ? 'border-sky-600 bg-sky-50/50 shadow-xs ring-2 ring-info/25' 
                 : 'border-slate-200 hover:border-slate-300 bg-surface'
@@ -412,7 +410,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
               posAudio.playScanBeep();
               setFormData(prev => ({ ...prev, saleType: SaleType.PICKUP }));
             }}
-            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all hover:-translate-y-px active:scale-[0.99] flex flex-col justify-between gap-2.5 sm:gap-3 cursor-pointer ${
               formData.saleType === SaleType.PICKUP 
                 ? 'border-amber-600 bg-amber-50/50 shadow-xs ring-2 ring-warning/25' 
                 : 'border-slate-200 hover:border-slate-300 bg-surface'
@@ -539,7 +537,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
             </div>
 
             {formData.saleType === SaleType.DELIVERY && (
-              <div className="space-y-3 pt-1 border-t border-slate-100">
+              <div className="space-y-3 pt-1 border-t border-slate-100 animate-rise-in">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
                     Առաքման Հասցե <span className="text-danger-edge">*</span>
@@ -577,22 +575,21 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
             )}
 
             {formData.saleType === SaleType.PICKUP && (
-              <div className="pt-1 border-t border-slate-100">
+              <div className="pt-1 border-t border-slate-100 animate-rise-in">
                 <label className="text-xs font-bold text-slate-700 block mb-1">
                   Նպատակակետ Մասնաճյուղ
                 </label>
-                <select
+                <SelectField
                   aria-label="Նպատակակետ մասնաճյուղ"
                   name="pickupBranch"
                   value={formData.pickupBranch}
-                  onChange={handleChange}
-                  className="input-field"
+                  onChange={(v) => handleChange({ target: { name: 'pickupBranch', value: v } } as unknown as React.ChangeEvent<HTMLSelectElement>)}
                 >
                   <option value="Գլխավոր Մասնաճյուղ (Կենտրոն)">Գլխավոր Մասնաճյուղ (Կենտրոն)</option>
                   <option value="Մասնաճյուղ Կոմիտաս">Մասնաճյուղ Կոմիտաս</option>
                   <option value="Մասնաճյուղ Մաշտոց">Մասնաճյուղ Մաշտոց</option>
                   <option value="Մասնաճյուղ Գարեգին Նժդեհ">Մասնաճյուղ Գարեգին Նժդեհ</option>
-                </select>
+                </SelectField>
               </div>
             )}
           </div>
@@ -616,7 +613,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                 Վճարման Պայման
               </label>
               {formData.saleType === SaleType.ON_SITE ? (
-                <div className="p-3 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="p-3 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-between animate-rise-in">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <span>Լրիվ վճարում (100%)</span>
@@ -626,14 +623,14 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                   </span>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 animate-rise-in">
                   <button
                     type="button"
                     onClick={() => {
                       posAudio.playScanBeep();
                       setFormData(prev => ({ ...prev, paymentTerms: PaymentTerms.FULL, prepaymentAmount: 0 }));
                     }}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border text-left transition-all flex items-center justify-between ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border text-left transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer ${
                       formData.paymentTerms === PaymentTerms.FULL
                         ? 'bg-ink-inverse text-white border-white/10'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -653,7 +650,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                         prepaymentAmount: prev.prepaymentAmount > 0 ? prev.prepaymentAmount : Math.round(totalAmount * 0.3)
                       }));
                     }}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border text-left transition-all flex items-center justify-between ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border text-left transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer ${
                       formData.paymentTerms === PaymentTerms.PREPAYMENT
                         ? 'bg-warning text-white border-white/20'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -667,7 +664,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
             </div>
 
             {isPrepayment && (
-              <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200 space-y-2">
+              <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200 space-y-2 animate-rise-in">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-amber-900">Մասնակի վճարման Գումար՝</span>
                   <span className="font-mono text-xs font-bold text-amber-950">
@@ -709,7 +706,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                         posAudio.playScanBeep();
                         setFormData(prev => ({ ...prev, paymentMethod: method.id }));
                       }}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 transition-all ${
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 transition-all active:scale-[0.97] cursor-pointer ${
                         isSelected 
                           ? 'bg-ink-inverse text-white border-white/10 shadow-2xs' 
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -729,36 +726,34 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                 <label className="text-xs font-bold text-slate-700 block mb-1">
                   Վճարման Կարգավիճակ
                 </label>
-                <select
+                <SelectField
                   name="paymentStatus"
                   aria-label="Վճարման կարգավիճակ"
                   value={formData.paymentStatus}
-                  onChange={handleChange}
-                  className="input-field font-bold"
+                  onChange={(v) => handleChange({ target: { name: 'paymentStatus', value: v } } as unknown as React.ChangeEvent<HTMLSelectElement>)}
                 >
                   <option value={PaymentStatus.UNPAID}>Չվճարված</option>
                   <option value={PaymentStatus.PARTIAL}>Մասնակի վճարված</option>
                   <option value={PaymentStatus.PAID}>Վճարված է</option>
-                </select>
+                </SelectField>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
                   Պատվերի Կարգավիճակ
                 </label>
-                <select
+                <SelectField
                   name="status"
                   aria-label="Պատվերի կարգավիճակ"
                   value={formData.status}
-                  onChange={handleChange}
-                  className="input-field font-bold"
+                  onChange={(v) => handleChange({ target: { name: 'status', value: v } } as unknown as React.ChangeEvent<HTMLSelectElement>)}
                 >
                   <option value={OrderStatus.PENDING}>Սպասում է դրամարկղին</option>
                   <option value={OrderStatus.SOLD}>Վաճառված է (POS)</option>
                   <option value={OrderStatus.IN_TRANSIT}>Առաքման մեջ</option>
                   <option value={OrderStatus.DELIVERED}>Ավարտված / Հանձնված</option>
                   <option value={OrderStatus.CANCELLED}>Չեղարկված</option>
-                </select>
+                </SelectField>
               </div>
             </div>
 
@@ -793,7 +788,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
           <button
             type="button"
             onClick={() => handleAddItem()}
-            className="w-full sm:w-auto px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-primary-ink text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-indigo-200/70 cursor-pointer"
+            className="btn btn-soft-primary w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Ավելացնել Տող</span>
@@ -828,7 +823,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                 const hasDiscount = itemDiscount > 0;
 
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={item.id} className="row-interactive animate-rise-in">
                     <td className="py-2.5 px-3">
                       <input
                         aria-label="Ապրանքի կոդ"
@@ -958,7 +953,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
             return (
               <div 
                 key={item.id} 
-                className="p-3.5 sm:p-4 bg-slate-50/80 border border-slate-200/90 rounded-2xl space-y-3 relative shadow-2xs"
+                className="p-3.5 sm:p-4 bg-slate-50/80 border border-slate-200/90 rounded-2xl space-y-3 relative shadow-2xs animate-rise-in"
               >
                 <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
                   <div className="flex items-center gap-2">
@@ -1145,7 +1140,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
       </div>
 
       {/* Bottom Floating Bar */}
-      <div className="bg-surface/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xl sticky bottom-3 sm:bottom-4 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+      <div className="bg-surface/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-raised sticky bottom-3 sm:bottom-4 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
         <button
           type="button"
           onClick={handleSave}
@@ -1163,6 +1158,6 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
           Չեղարկել
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

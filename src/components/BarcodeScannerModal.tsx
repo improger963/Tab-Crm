@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, MODAL_SHELL, MICRO_ENTER } from '../lib/motionPresets';
 import { 
   ScanLine, X, Search, Sparkles, CheckCircle2, 
   ShoppingBag, ArrowRight, Tag, Volume2, Plus, Zap
@@ -95,25 +96,23 @@ export default function BarcodeScannerModal({
     handleScanInput(code);
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px]"
+      {isOpen && (
+      <motion.div
+        {...MODAL_BACKDROP}
+        className="modal-backdrop"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          {...MODAL_SHELL}
           role="dialog"
           aria-modal="true"
           aria-labelledby="scanner-title"
-          className="bg-surface w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col"
+          className="modal-shell w-full max-w-lg"
         >
           {/* Header */}
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-ink-inverse text-white">
+          <div className="modal-header-dark p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/10 rounded-lg border border-white/15 text-white">
                 <ScanLine className="w-5 h-5 animate-pulse" aria-hidden="true" />
@@ -198,7 +197,7 @@ export default function BarcodeScannerModal({
                       setMatchResult(null);
                     }}
                     aria-label="Մաքրել կոդը"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 hover:text-slate-900 cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
                   >
                     Մաքրել
                   </button>
@@ -221,7 +220,7 @@ export default function BarcodeScannerModal({
                       key={item.code}
                       type="button"
                       onClick={() => handleSimulateScan(item.code)}
-                      className="p-2 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200/80 rounded-lg text-left transition-all duration-150 text-xs group cursor-pointer"
+                      className="p-2 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200/80 rounded-lg text-left transition-all duration-150 text-xs group cursor-pointer active:scale-[0.97]"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-semibold text-primary-ink text-xs tabular-nums">{item.code}</span>
@@ -237,8 +236,9 @@ export default function BarcodeScannerModal({
             {/* Match Result Display */}
             {matchResult && (
               <motion.div
-                initial={{ opacity: 0, y: 5 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={MICRO_ENTER}
                 className="p-4 rounded-2xl"
               >
                 {matchResult.type === 'order' && matchResult.order && (
@@ -261,7 +261,7 @@ export default function BarcodeScannerModal({
                         onSelectOrder(matchResult.order!);
                         onClose();
                       }}
-                      className="btn btn-primary w-full mt-2 justify-center gap-1.5"
+                      className="btn btn-primary w-full mt-2 justify-center gap-1.5 active:scale-[0.98]"
                     >
                       <span>Բացել Պատվերի Էջը</span>
                       <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -290,7 +290,7 @@ export default function BarcodeScannerModal({
                           onCreateWithItem(matchResult.product!);
                           onClose();
                         }}
-                        className="btn w-full mt-2 justify-center gap-1.5 bg-success hover:bg-success/90 text-white"
+                        className="btn w-full mt-2 justify-center gap-1.5 bg-success hover:brightness-110 text-white active:scale-[0.98]"
                       >
                         <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Գրանցել Նոր Պատվեր այս Ապրանքով</span>
@@ -319,7 +319,8 @@ export default function BarcodeScannerModal({
             </button>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+      )}
     </AnimatePresence>
   );
 }

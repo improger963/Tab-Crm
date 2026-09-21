@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { MICRO_ENTER } from '../lib/motionPresets';
 import { 
   Menu, 
   Search, 
@@ -104,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="bg-surface/90 backdrop-blur-md border-b border-slate-200/80 shrink-0 z-20 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.03)]">
+    <header className="bg-surface/90 backdrop-blur-md border-b border-slate-200/80 shrink-0 z-20 shadow-2xs">
       {/* Top Bar Row */}
       <div className="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
         
@@ -133,21 +135,31 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           ) : (
             <div className="lg:hidden flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.12),inset_0_1px_0_var(--fill-highlight)]">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-fill">
                 <Layers className="w-4 h-4 stroke-[2.2]" aria-hidden="true" />
               </div>
               <span className="font-bold text-slate-900 text-[13px] tracking-tight">tab.am</span>
             </div>
           )}
 
-          {/* Desktop Breadcrumb / Title */}
+          {/* Desktop Breadcrumb / Title — crossfades on every view swap */}
           <div className="hidden lg:block min-w-0">
-            <h1 className="text-sm font-semibold text-slate-900 tracking-[-0.01em] leading-none truncate">
-              {currentMeta.title}
-            </h1>
-            <p className="text-2xs font-medium text-slate-500 mt-1 truncate">
-              {currentMeta.subtitle}
-            </p>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeView + (currentOrder?.id ?? '')}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={MICRO_ENTER}
+              >
+                <h1 className="text-sm font-semibold text-slate-900 tracking-[-0.01em] leading-none truncate">
+                  {currentMeta.title}
+                </h1>
+                <p className="text-2xs font-medium text-slate-500 mt-1 truncate">
+                  {currentMeta.subtitle}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
@@ -276,10 +288,10 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={() => setStatusFilter(tab.label)}
                   aria-pressed={isActive}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all duration-150 active:scale-[0.97] cursor-pointer whitespace-nowrap ${
                     isActive
-                      ? 'bg-surface text-slate-900 font-semibold shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.08),0_0_0_1px_rgb(var(--shadow-rgb)/0.04)]'
-                      : 'text-slate-500 hover:text-slate-800 font-medium'
+                      ? 'bg-surface text-slate-900 font-semibold shadow-edge'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-surface/60 font-medium'
                   }`}
                 >
                   <span>{tab.label}</span>

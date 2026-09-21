@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, MODAL_SHELL } from '../lib/motionPresets';
 import { 
   Edit3, FileText, Copy, Check, Trash2, 
   MapPin, Phone, User, Calendar, Clock, ShoppingBag, 
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus, PaymentStatus, SaleType, PaymentMethod, PaymentTerms } from '../types';
 import { posAudio } from '../lib/posAudio';
+import { deriveStatusAfterPaymentChange } from '../lib/orderRules';
 import { 
   calculateItemLineSubtotal, 
   calculateItemDiscount, 
@@ -137,23 +139,8 @@ ${itemsText}`;
   const handleCashierPaymentUpdate = (newStatus: PaymentStatus) => {
     posAudio.playSuccessChime();
     if (onUpdateOrder) {
-      let targetStatus = order.status;
-      const isOnSite = (order.saleType || SaleType.ON_SITE) === SaleType.ON_SITE;
-
-      if (newStatus === PaymentStatus.PAID) {
-        if (isOnSite) {
-          // Rule 3: For In-Store sale, confirming payment immediately sets status to DELIVERED (Ավարտված)!
-          targetStatus = OrderStatus.DELIVERED;
-        } else if (order.status === OrderStatus.PENDING) {
-          // For Delivery/Pickup, confirming payment advances from PENDING to SOLD (Ամրագրված/Պատվիրված)
-          targetStatus = OrderStatus.SOLD;
-        }
-      } else {
-        // If payment is unpaid or partial, ensure status cannot be DELIVERED
-        if (targetStatus === OrderStatus.DELIVERED) {
-          targetStatus = isOnSite ? OrderStatus.PENDING : OrderStatus.SOLD;
-        }
-      }
+      // Rule 3 + payment-side state machine lives in lib/orderRules.ts
+      const targetStatus = deriveStatusAfterPaymentChange(order, newStatus);
 
       onUpdateOrder(order.id, { 
         paymentStatus: newStatus,
@@ -175,25 +162,24 @@ ${itemsText}`;
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.status === order.status);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+    /* Page enter/exit is driven once by App's PAGE_VARIANTS wrapper — no nested
+       animation here, or the transforms would stack and fight each other. */
+    <div 
       className="max-w-6xl mx-auto space-y-6 pb-20"
     >
       {/* Top Action Bar */}
-      <div className="bg-surface p-5 md:p-6 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="solid-card p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all cursor-pointer"
+            className="btn btn-soft p-2.5 rounded-xl active:scale-[0.94]"
             title="Վերադառնալ ցուցակին"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              <span className="code-chip !px-2.5 !py-0.5 cursor-default">
                 {order.id}
               </span>
               <span className="badge badge-neutral">
@@ -221,7 +207,7 @@ ${itemsText}`;
                 posAudio.playSuccessChime();
                 onUpdateStatus(order.id, OrderStatus.SOLD);
               }}
-              className="px-4 py-2.5 bg-success hover:bg-success/90 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
+              className="btn btn-md btn-success"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Հաստատել POS Վաճառքը</span>
@@ -230,7 +216,7 @@ ${itemsText}`;
 
           <button
             onClick={() => onEdit(order)}
-            className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-primary-ink border border-indigo-200/80 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-2xs cursor-pointer"
+            className="btn btn-md btn-soft-primary"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Խմբագրել</span>
@@ -238,7 +224,7 @@ ${itemsText}`;
 
           <button
             onClick={onOpenReportsPage}
-            className="px-4 py-2.5 bg-ink-inverse hover:bg-ink-inverse/85 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+            className="btn btn-md btn-dark"
             title="Բացել Փաստաթղթերի և PDF Արտահանման Էջը"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
@@ -247,7 +233,7 @@ ${itemsText}`;
 
           <button
             onClick={handleCopyAll}
-            className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+            className="btn btn-soft"
             title="Պատճենել ամբողջ տեքստը"
           >
             {copiedField === 'all' ? (
@@ -265,7 +251,7 @@ ${itemsText}`;
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition-all border border-rose-100 ml-1 cursor-pointer"
+            className="btn p-2.5 !rounded-xl active:scale-[0.94] bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 ml-1"
             title="Ջնջել պատվերը"
           >
             <Trash2 className="w-4 h-4" />
@@ -276,12 +262,13 @@ ${itemsText}`;
       {/* Delete Confirmation Modal Overlay */}
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <motion.div
+            {...MODAL_BACKDROP}
+            className="modal-backdrop z-[1100] bg-black/40 backdrop-blur-sm"
+          >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-surface p-6 rounded-2xl border border-slate-200/80 max-w-sm w-full shadow-2xl space-y-4"
+              {...MODAL_SHELL}
+              className="modal-shell max-w-sm w-full p-6 space-y-4"
             >
               <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
                 <AlertTriangle className="w-6 h-6" />
@@ -293,7 +280,7 @@ ${itemsText}`;
               <div className="grid grid-cols-2 gap-2.5 pt-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                  className="btn btn-soft btn-md w-full"
                 >
                   Չեղարկել
                 </button>
@@ -303,18 +290,18 @@ ${itemsText}`;
                     setShowDeleteConfirm(false);
                     onBack();
                   }}
-                  className="py-2.5 bg-danger hover:bg-danger text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                  className="btn btn-danger btn-md w-full"
                 >
                   Այո, Ջնջել
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Interactive Status Progression Stepper */}
-      <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+      <div className="solid-card p-5 space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold uppercase tracking-wide text-slate-500 text-2xs">
             Կարգավիճակի Փոխում (Սեղմեք ցանկացած փուլի վրա)՝
@@ -346,8 +333,8 @@ ${itemsText}`;
                   isActive
                     ? 'border-indigo-600 bg-indigo-50/70 shadow-2xs ring-2 ring-primary-ink/25'
                     : isPast
-                    ? 'border-slate-200 bg-slate-50/80 hover:bg-slate-100'
-                    : 'border-slate-200 bg-surface hover:bg-slate-50 opacity-60 hover:opacity-100'
+                    ? 'border-slate-200 bg-slate-50/80 hover:bg-slate-100 dark:bg-slate-900/40 dark:hover:bg-slate-800/60'
+                    : 'border-slate-200 bg-surface hover:bg-slate-50 dark:hover:bg-slate-800/50 opacity-60 hover:opacity-100'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -373,7 +360,7 @@ ${itemsText}`;
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Products List & Summary (2 Cols) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="solid-card p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-primary-ink" />
@@ -386,7 +373,7 @@ ${itemsText}`;
                 <button
                   type="button"
                   onClick={handleCopyAllSKUs}
-                  className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-primary-ink border border-slate-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="btn btn-ghost !py-1 !px-3"
                   title="Պատճենել բոլոր SKU կոդերը POS-ի համար"
                 >
                   {copiedField === 'all-skus' ? (
@@ -424,12 +411,12 @@ ${itemsText}`;
                     const hasDiscount = itemDiscount > 0;
 
                     return (
-                      <tr key={item.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={item.id || idx} className="row-interactive animate-rise-in" style={{ animationDelay: `${Math.min(idx, 12) * 0.03}s` }}>
                         <td className="py-3 px-3">
                           <button
                             type="button"
                             onClick={() => handleCopy(item.code || '', `sku-${idx}`)}
-                            className="font-mono text-xs font-bold text-primary-ink bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200/70 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                            className="code-chip !px-2"
                             title="Սեղմեք պատճենելու համար"
                           >
                             <span>{item.code || '---'}</span>
@@ -441,12 +428,12 @@ ${itemsText}`;
                           </button>
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/70">
+                          <span className="amber-chip">
                             {item.artikul || '---'}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                          <span className="slate-chip">
                             {item.quantity}
                           </span>
                         </td>
@@ -493,14 +480,14 @@ ${itemsText}`;
               const totalDiscount = itemsDiscount + orderDiscountAmount;
 
               return (
-                <div className="pt-4 border-t border-slate-200 bg-slate-50/80 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
+                <div className="pt-4 border-t border-slate-200 bg-slate-50 dark:bg-slate-900/50 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                           Վճարման Պայման՝
                         </span>
-                        <span className="text-xs font-bold text-slate-800 bg-surface px-2.5 py-1 rounded-lg border border-slate-200">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-surface px-2.5 py-1 rounded-lg border border-slate-200">
                           {order.paymentTerms || PaymentTerms.FULL}
                         </span>
                       </div>
@@ -508,12 +495,12 @@ ${itemsText}`;
                       {/* Discount Badges */}
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {itemsDiscount > 0 && (
-                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-xs">
+                          <span className="badge badge-success">
                             Ապրանքների զեղչ՝ -{itemsDiscount.toLocaleString()} ֏
                           </span>
                         )}
                         {orderDiscountAmount > 0 && (
-                          <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-xs">
+                          <span className="badge badge-danger">
                             Պատվերի զեղչ՝ -{orderDiscountAmount.toLocaleString()} ֏ ({order.discountType === 'PERCENT' ? `${order.discount}%` : `${order.discount} ֏`})
                           </span>
                         )}
@@ -526,7 +513,7 @@ ${itemsText}`;
                           Սկզբնական՝ <span className="line-through">{grossSubtotal.toLocaleString()} ֏</span>
                         </div>
                       )}
-                      <span className="text-2xl font-bold text-slate-900 font-mono">
+                      <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-mono">
                         {(order.totalAmount || 0).toLocaleString()} <span className="text-sm font-normal text-slate-500">֏</span>
                       </span>
                     </div>
@@ -537,14 +524,14 @@ ${itemsText}`;
           </div>
 
           {/* Cashier Note & POS Info Card */}
-          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+          <div className="solid-card p-6 space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <Receipt className="w-4 h-4 text-emerald-700" />
               <h3 className="section-title">
                 Դրամարկղի և POS Նշումներ
               </h3>
             </div>
-            <p className="text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60 leading-relaxed font-medium">
+            <p className="text-xs text-slate-700 dark:text-slate-200 field-frame !rounded-2xl leading-relaxed font-medium">
               {order.cashierNote || 'Դրամարկղի համար լրացուցիչ նշում չկա:'}
             </p>
             {order.notes && (
@@ -552,7 +539,7 @@ ${itemsText}`;
                 <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
                   Ընդհանուր նշումներ՝
                 </span>
-                <p className="text-xs text-slate-600 bg-slate-50/50 p-3 rounded-xl border border-slate-200">
+                <p className="text-xs text-slate-600 dark:text-slate-300 field-frame">
                   {order.notes}
                 </p>
               </div>
@@ -563,7 +550,7 @@ ${itemsText}`;
         {/* Right Column: Dedicated Cashier Payment Center & Customer Details */}
         <div className="space-y-6">
           {/* Cashier Payment Center (վճարման եղանակ և կարգավիճակի փոփոխում կասիրի կողմից) */}
-          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="solid-card p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-emerald-700" />
@@ -578,11 +565,11 @@ ${itemsText}`;
 
             {/* Payment Method & Terms Grid */}
             <div className="space-y-3 text-xs">
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
+              <div className="field-frame !p-3.5 !rounded-2xl space-y-2">
                 <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Վճարման Եղանակ
                 </span>
-                <div className="flex items-center gap-2.5 text-slate-900 font-bold text-sm">
+                <div className="flex items-center gap-2.5 text-slate-900 dark:text-slate-100 font-bold text-sm">
                   <div className="p-2 bg-surface rounded-xl border border-slate-200 shadow-2xs">
                     {getPaymentMethodIcon(order.paymentMethod)}
                   </div>
@@ -591,12 +578,12 @@ ${itemsText}`;
               </div>
 
               {/* Payment Terms: Full vs Prepayment details */}
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
+              <div className="field-frame !p-3.5 !rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
                     Վճարման Տեսակ
                   </span>
-                  <span className="text-xs font-bold text-slate-800 font-mono">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 font-mono">
                     {order.paymentTerms || PaymentTerms.FULL}
                   </span>
                 </div>
@@ -604,14 +591,14 @@ ${itemsText}`;
                 {order.paymentTerms === PaymentTerms.PREPAYMENT ? (
                   <div className="space-y-1.5 pt-1.5 border-t border-slate-200/60">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-amber-800 font-bold">Մասնակի վճարում՝</span>
-                      <span className="font-mono font-bold text-amber-950 bg-amber-100/70 px-2 py-0.5 rounded-lg border border-amber-200">
+                      <span className="text-amber-800 dark:text-amber-300 font-bold">Մասնակի վճարում՝</span>
+                      <span className="font-mono font-bold text-amber-950 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-200">
                         {(order.prepaymentAmount || 0).toLocaleString()} ֏
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-600 font-bold">Մնացորդ գումար՝</span>
-                      <span className="font-mono font-bold text-slate-900 bg-surface px-2 py-0.5 rounded-lg border border-slate-200">
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100 bg-surface px-2 py-0.5 rounded-lg border border-slate-200">
                         {(order.remainingBalance || (order.totalAmount - (order.prepaymentAmount || 0))).toLocaleString()} ֏
                       </span>
                     </div>
@@ -633,10 +620,10 @@ ${itemsText}`;
                   <button
                     type="button"
                     onClick={() => handleCashierPaymentUpdate(PaymentStatus.PAID)}
-                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
                       order.paymentStatus === PaymentStatus.PAID
                         ? 'bg-success text-white ring-2 ring-white/50'
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
                     }`}
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -647,10 +634,10 @@ ${itemsText}`;
                     <button
                       type="button"
                       onClick={() => handleCashierPaymentUpdate(PaymentStatus.PARTIAL)}
-                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] flex items-center justify-center gap-1.5 cursor-pointer ${
                         order.paymentStatus === PaymentStatus.PARTIAL
                           ? 'bg-warning text-white ring-2 ring-white/50'
-                          : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
                       }`}
                     >
                       <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>Մասնակի վճարված</span>
@@ -659,10 +646,10 @@ ${itemsText}`;
                     <button
                       type="button"
                       onClick={() => handleCashierPaymentUpdate(PaymentStatus.UNPAID)}
-                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] flex items-center justify-center gap-1.5 cursor-pointer ${
                         order.paymentStatus === PaymentStatus.UNPAID
                           ? 'bg-ink-inverse text-white ring-2 ring-white/40'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700'
                       }`}
                     >
                       <span>Չվճարված</span>
@@ -674,7 +661,7 @@ ${itemsText}`;
           </div>
 
           {/* Customer & Location Details */}
-          <div className="bg-surface p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
+          <div className="solid-card p-6 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <User className="w-4 h-4 text-primary-ink" />
               <h3 className="section-title">
@@ -683,16 +670,16 @@ ${itemsText}`;
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
+              <div className="field-frame !rounded-2xl space-y-1">
                 <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Անուն Ազգանուն
                 </span>
-                <p className="font-bold text-sm text-slate-900">
+                <p className="font-bold text-sm text-slate-900 dark:text-slate-50">
                   {order.customerName}
                 </p>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
+              <div className="field-frame !rounded-2xl space-y-2">
                 <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Հեռախոսահամար(ներ)
                 </span>
@@ -703,7 +690,7 @@ ${itemsText}`;
                   {order.phoneNumber && (
                     <a
                       href={`tel:${order.phoneNumber.replace(/\D/g, '')}`}
-                      className="px-2.5 py-1 bg-primary hover:bg-primary-strong text-white rounded-lg text-2xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                      className="btn btn-primary !px-2.5 !py-1 !text-2xs w-full"
                     >
                       <Phone className="w-3 h-3" />
                       <span>Զանգել</span>
@@ -724,7 +711,7 @@ ${itemsText}`;
                         </span>
                         <a
                           href={`tel:${addPhone.replace(/\D/g, '')}`}
-                          className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-primary-ink border border-indigo-200 rounded-md text-2xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                          className="btn btn-soft-primary !px-2 !py-0.5 !text-2xs w-full"
                         >
                           <Phone className="w-2.5 h-2.5" />
                           <span>Զանգել</span>
@@ -735,30 +722,30 @@ ${itemsText}`;
                 )}
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
+              <div className="field-frame !rounded-2xl space-y-1">
                 <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                   Հասցե / Վայր
                 </span>
-                <p className="font-medium text-slate-800 flex items-start gap-1.5">
+                <p className="font-medium text-slate-800 dark:text-slate-200 flex items-start gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
                   <span>{order.address || '---'}</span>
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                <div className="field-frame !p-2.5">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                     Ամսաթիվ
                   </span>
-                  <span className="font-mono text-xs font-bold text-slate-800">
+                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
                     {order.purchaseDate}
                   </span>
                 </div>
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                <div className="field-frame !p-2.5">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
                     Սրահի Աշխատակից
                   </span>
-                  <span className="text-xs font-bold text-slate-800 truncate block">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
                     {order.salesRep || '---'}
                   </span>
                 </div>
@@ -778,7 +765,7 @@ ${itemsText}`;
             <button
               type="button"
               onClick={onOpenReportsPage}
-              className="w-full py-2.5 bg-success hover:bg-success text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              className="btn btn-md btn-success w-full"
             >
               <FileText className="w-4 h-4 text-white" />
               <span>Բացել PDF Հաշվետվությունների Էջը</span>
@@ -786,6 +773,6 @@ ${itemsText}`;
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

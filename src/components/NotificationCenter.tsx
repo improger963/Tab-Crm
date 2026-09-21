@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, POPOVER_PANEL, EASE_PREMIUM } from '../lib/motionPresets';
 import { 
   Bell, 
   BellOff, 
@@ -42,22 +43,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop mask */}
-          <div 
+          {/* Backdrop mask — fades in/out with the panel */}
+          <motion.div 
             aria-hidden="true"
+            {...MODAL_BACKDROP}
             className="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px]"
             onClick={onClose}
           />
           
           <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.96 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 380 }}
+            {...POPOVER_PANEL}
             role="dialog"
             aria-modal="true"
             aria-labelledby="notification-center-title"
-            className="fixed inset-x-4 top-20 mx-auto max-w-sm sm:absolute sm:inset-auto sm:right-6 sm:top-18 sm:w-96 glass-card rounded-xl shadow-xl z-50 overflow-hidden flex flex-col text-left"
+            className="fixed inset-x-4 top-20 mx-auto max-w-sm sm:absolute sm:inset-auto sm:right-6 sm:top-18 sm:w-96 glass-card rounded-xl shadow-popover z-50 overflow-hidden flex flex-col text-left"
           >
             {/* Header */}
             <div className="p-3.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
@@ -109,12 +108,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               ) : (
                 notifications.map((notif) => {
                   return (
-                    <button
+                    <motion.button
                       key={notif.id}
                       type="button"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.24, delay: Math.min(notifications.indexOf(notif), 6) * 0.03, ease: EASE_PREMIUM }}
                       onClick={() => onSelectNotification(notif)}
-                      className={`w-full p-3.5 flex gap-3 transition-colors text-left relative cursor-pointer group select-none ${
-                        notif.read ? 'bg-surface hover:bg-slate-50' : 'bg-indigo-50/40 hover:bg-indigo-50/70'
+                      className={`w-full p-3.5 flex gap-3 text-left relative cursor-pointer group select-none ${
+                        notif.read ? 'bg-surface row-interactive' : 'bg-indigo-50/40 hover:bg-indigo-50/70'
                       }`}
                     >
                       {!notif.read && (
@@ -150,7 +152,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                           )}
                         </div>
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })
               )}
@@ -170,7 +172,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     isAlertEnabled ? 'bg-primary' : 'bg-slate-300'
                   }`}
                 >
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ease-premium ${
                     isAlertEnabled ? 'translate-x-4' : 'translate-x-0'
                   }`} />
                 </button>

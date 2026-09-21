@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside 
       aria-label="Հիմնական նավիգացիա"
-      className={`hidden lg:flex flex-col bg-surface/90 backdrop-blur-md border-r border-slate-200/80 transition-all duration-300 ease-in-out select-none z-30 shrink-0 ${
+      className={`hidden lg:flex flex-col bg-surface/90 backdrop-blur-md border-r border-slate-200/80 transition-all duration-300 ease-premium select-none z-30 shrink-0 ${
         isCollapsed ? 'w-[72px]' : 'w-[260px]'
       }`}
     >
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-2.5 cursor-pointer group min-w-0"
           title="tab.am POS"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center text-white shadow-[0_2px_6px_-1px_rgb(var(--shadow-rgb)/0.20),inset_0_1px_0_var(--fill-highlight)] shrink-0 transition-transform duration-200 group-hover:scale-[1.04]" aria-hidden="true">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center text-white shadow-fill-strong shrink-0 transition-transform duration-200 group-hover:scale-[1.04]" aria-hidden="true">
             <Layers className="w-[18px] h-[18px] stroke-[2.2]" />
           </div>
           
@@ -126,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all duration-150 cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-150 active:scale-[0.92] cursor-pointer"
           aria-label={isCollapsed ? 'Բացել կողային վահանակը' : 'Ծալել կողային վահանակը'}
           aria-expanded={!isCollapsed}
         >
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label="Գրանցել նոր պատվեր"
           aria-current={activeView === 'create-order' ? 'page' : undefined}
           title="Գրանցել նոր պատվեր (Կոճակ՝ N)"
-          className={`w-full flex items-center justify-center gap-2.5 py-2 rounded-lg font-semibold text-xs transition-all duration-150 cursor-pointer active:scale-[0.98] shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.10),inset_0_1px_0_var(--fill-highlight)] ${
+          className={`w-full flex items-center justify-center gap-2.5 py-2 rounded-lg font-semibold text-xs transition-all duration-150 cursor-pointer hover:shadow-fill-strong active:scale-[0.98] shadow-fill ${
             activeView === 'create-order'
               ? 'bg-ink-inverse text-white ring-2 ring-primary/30'
               : 'bg-primary hover:bg-primary-strong text-white'
@@ -179,9 +179,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   type="button"
                   onClick={() => setActiveView(item.id)}
                   aria-current={item.isActive ? 'page' : undefined}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer text-left relative group ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 active:scale-[0.99] cursor-pointer text-left relative group ${
                     item.isActive
-                      ? 'bg-slate-100/90 text-slate-900 font-semibold shadow-[inset_2px_0_0_var(--color-primary)]'
+                      ? 'bg-gradient-to-r from-slate-100 via-slate-100 to-slate-100/40 text-slate-900 font-semibold nav-active'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
                   } ${isCollapsed ? 'justify-center px-0' : ''}`}
                   title={item.label}
@@ -195,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
 
                   {!isCollapsed && item.count !== undefined && (
-                    <span className={`px-1.5 py-0.5 rounded-md text-2xs font-mono font-semibold tabular-nums ${
+                    <span className={`px-1.5 py-0.5 rounded-md text-2xs font-mono font-semibold tabular-nums shadow-2xs transition-colors duration-150 ${
                       item.isActive ? 'bg-primary text-white' : 'bg-slate-200/70 text-slate-500'
                     }`}>
                       {item.count}
@@ -208,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   {/* Collapsed Tooltip Preview */}
                   {isCollapsed && (
-                    <div role="tooltip" className="absolute left-full ml-2 px-2 py-1 bg-ink-inverse text-white text-xs font-medium rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-50 whitespace-nowrap">
+                    <div role="tooltip" className="absolute left-full ml-2 px-2 py-1 bg-ink-inverse text-white text-xs font-medium rounded-md shadow-lg opacity-0 translate-x-[-4px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 transition-all duration-150 z-50 whitespace-nowrap">
                       {item.label} {item.count !== undefined && `(${item.count})`}
                     </div>
                   )}

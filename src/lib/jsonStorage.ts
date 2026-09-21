@@ -62,6 +62,9 @@ export const parseOrdersJson = (jsonString: string): { success: boolean; orders:
       id: String(o.id || (1000 + idx)).trim(),
       customerName: String(o.customerName || 'Անանուն Հաճախորդ'),
       phoneNumber: String(o.phoneNumber || o.customerPhone || ''),
+      additionalPhoneNumbers: Array.isArray(o.additionalPhoneNumbers)
+        ? o.additionalPhoneNumbers.map((p: any) => String(p))
+        : undefined,
       purchaseDate: String(o.purchaseDate || getTodayLocalYMD()),
       deliveryDate: String(o.deliveryDate || getTodayLocalYMD()),
       address: String(o.address || o.customerAddress || 'Երևան'),
@@ -114,4 +117,42 @@ export const getJsonStorageSizeInKB = (orders: Order[]): string => {
   } catch {
     return '0.00';
   }
+};
+
+// ── localStorage capacity watchdog ────────────────────────────────────────────
+// Browsers give each origin ~5MB of localStorage. TabCRM stores its whole
+// "database" there, so running silently out of room would mean losing writes.
+// These helpers let the UI warn the cashier well before the quota is hit.
+
+export const LOCAL_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
+export const STORAGE_WARNING_THRESHOLD = 0.8; // warn at 80% of the quota
+
+export interface StorageUsageInfo {
+  usedBytes: number;
+  quotaBytes: number;
+  usedPct: number;
+  nearLimit: boolean;
+}
+
+/** Measures the total footprint of every key currently held by this origin. */
+export const getStorageUsageInfo = (): StorageUsageInfo => {
+  let chars = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      chars += key.length + (localStorage.getItem(key)?.length ?? 0);
+    }
+  } catch (e) {
+    console.error('Error measuring localStorage footprint', e);
+  }
+  // localStorage accounts UTF-16 characters as 2 bytes per char.
+  const usedBytes = chars * 2;
+  const usedPct = Math.min(100, (usedBytes / LOCAL_STORAGE_QUOTA_BYTES) * 100);
+  return {
+    usedBytes,
+    quotaBytes: LOCAL_STORAGE_QUOTA_BYTES,
+    usedPct,
+    nearLimit: usedBytes >= LOCAL_STORAGE_QUOTA_BYTES * STORAGE_WARNING_THRESHOLD,
+  };
 };

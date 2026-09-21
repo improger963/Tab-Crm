@@ -1,4 +1,4 @@
-import { Client, Order, OrderStatus, OrderEvent, OrderItem, PaymentStatus, SaleType, PaymentTerms, PaymentMethod } from '../types';
+import { Order, OrderStatus, OrderEvent, OrderItem, PaymentStatus, SaleType, PaymentTerms, PaymentMethod } from '../types';
 
 const STORAGE_KEYS = {
   ORDERS: 'crm_orders',
@@ -257,18 +257,88 @@ export const clearAllOrders = () => {
   return { orders: [], clients: [] };
 };
 
-export const generateNextNumericOrderId = (): string => {
-  const { orders } = getStoredData();
+const nextNumericIdAbove = (orders: Order[]): string => {
   let maxNum = 999;
+  const taken = new Set<string>();
   for (const o of orders) {
-    const cleanId = (o.id || '').replace(/^ORD-/, '');
-    const num = parseInt(cleanId, 10);
+    const cleanId = String(o.id ?? '').trim();
+    taken.add(cleanId);
+    const num = parseInt(cleanId.replace(/^ORD-/, ''), 10);
     if (!isNaN(num) && num > maxNum) {
       maxNum = num;
     }
   }
-  const nextNum = maxNum + 1;
-  return String(nextNum);
+  // Guard against collisions with non-parsable edge IDs: keep advancing until the
+  // candidate is guaranteed free in the current dataset.
+  let candidate = maxNum + 1;
+  while (taken.has(String(candidate))) {
+    candidate += 1;
+  }
+  return String(candidate);
+};
+
+export const generateNextNumericOrderId = (): string => {
+  const { orders } = getStoredData();
+  return nextNumericIdAbove(orders);
+};
+
+/** Overwrite the full orders collection in local storage (used by JSON imports). */
+export const saveAllOrders = (orders: Order[]) => {
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+};
+
+export interface OrderImportResult {
+  orders: Order[];
+  /** Incoming orders skipped in merge mode because their ID already exists. */
+  skippedDuplicates: number;
+  /** Incoming orders assigned a fresh unique ID to avoid a collision. */
+  renumbered: number;
+}
+
+/**
+ * Merge-hardened import of orders into local storage.
+ *
+ * Guarantees that the resulting dataset can never contain two orders with the
+ * same ID (which would silently break save/update/delete lookups):
+ * - 'replace': takes the imported list, but de-duplicates IDs within the file itself.
+ * - 'merge':   keeps existing orders; an incoming order whose ID already exists is
+ *              treated as a duplicate and skipped, any other ID clash gets renumbered
+ *              to the next free numeric ID instead of overwriting real data.
+ */
+export const importOrdersIntoStorage = (
+  existingOrders: Order[],
+  importedOrders: Order[],
+  mode: 'replace' | 'merge'
+): OrderImportResult => {
+  let skippedDuplicates = 0;
+  let renumbered = 0;
+
+  const base: Order[] = mode === 'replace' ? [] : [...existingOrders];
+  const taken = new Set(base.map(o => String(o.id ?? '').trim()));
+
+  for (const rawIncoming of importedOrders) {
+    let incoming = rawIncoming;
+    const id = String(incoming.id ?? '').trim();
+    if (taken.has(id)) {
+      if (mode === 'merge') {
+        // Same ID already present -> treat as duplicate backup entry, skip it.
+        skippedDuplicates += 1;
+        continue;
+      }
+      // Inside replace mode the only clash possible is within the imported file
+      // itself: give the later one a fresh unique ID rather than duplicating it.
+      incoming = { ...incoming, id: nextNumericIdAbove([...base, ...importedOrders]) };
+      renumbered += 1;
+    } else if (!id) {
+      incoming = { ...incoming, id: nextNumericIdAbove(base) };
+      renumbered += 1;
+    }
+    taken.add(String(incoming.id).trim());
+    base.unshift(incoming);
+  }
+
+  saveAllOrders(base);
+  return { orders: base, skippedDuplicates, renumbered };
 };
 
 export const getStoredData = () => {

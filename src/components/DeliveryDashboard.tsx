@@ -8,7 +8,6 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
-import { motion, AnimatePresence } from 'motion/react';
 import { 
   TrendingUp, 
   CheckCircle,
@@ -207,10 +206,8 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
   }, [filteredOrders]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+    /* Page enter/exit is driven once by App's PAGE_VARIANTS wrapper. */
+    <div 
       className="space-y-6 pb-16 max-w-7xl mx-auto"
     >
       {/* Top Filter & Interactive Time Horizon Bar */}
@@ -241,7 +238,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
                 posAudio.playScanBeep();
                 setTimeFilter(tab.id as any);
               }}
-              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer ${
                 timeFilter === tab.id 
                   ? 'bg-surface text-indigo-900 shadow-2xs' 
                   : 'text-slate-500 hover:text-slate-900'
@@ -255,7 +252,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
 
       {/* Metrics Row 1: Operations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:-translate-y-px hover:shadow-md transition-all">
           <div>
             <p className="section-title text-slate-500">
               Արդյունավետություն
@@ -273,7 +270,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
         </div>
 
-        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:-translate-y-px hover:shadow-md transition-all">
           <div>
             <p className="section-title text-slate-500">
               Ավարտված / Վաճառված
@@ -290,7 +287,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
         </div>
 
-        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:-translate-y-px hover:shadow-md transition-all">
           <div>
             <p className="section-title text-slate-500">
               Ընթացիկ Ակտիվ
@@ -307,7 +304,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
         </div>
 
-        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
+        <div className="bg-surface p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:-translate-y-px hover:shadow-md transition-all">
           <div>
             <p className="section-title text-slate-500">
               Միջին Չեկ (AOV)
@@ -338,7 +335,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
           <p className="text-2xl font-bold text-emerald-700 font-mono">
             {stats.totalRevenue.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-500">AMD</span>
+            <span className="text-xs font-bold text-slate-500">֏</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
@@ -360,7 +357,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
           <p className="text-2xl font-bold text-amber-700 font-mono">
             {stats.outstandingAmount.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-500">AMD</span>
+            <span className="text-xs font-bold text-slate-500">֏</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
@@ -382,7 +379,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
           <p className="text-2xl font-bold text-primary-ink font-mono">
             {stats.grossVolume.toLocaleString()}{' '}
-            <span className="text-xs font-bold text-slate-500">AMD</span>
+            <span className="text-xs font-bold text-slate-500">֏</span>
           </p>
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div className="bg-primary h-full rounded-full w-full" />
@@ -443,7 +440,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           ].map((stage, idx) => (
             <div 
               key={idx} 
-              className={`p-4 rounded-2xl border ${stage.border} ${stage.bg} flex flex-col justify-between gap-2 shadow-2xs`}
+              className={`p-4 rounded-2xl border ${stage.border} ${stage.bg} flex flex-col justify-between gap-2 shadow-2xs transition-all hover:-translate-y-px`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700">{stage.step}</span>
@@ -648,7 +645,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
                             type="button"
                             onClick={() => handleCopySku(item.code!)}
                             title="Սեղմեք պատճենելու համար"
-                            className="font-mono text-2xs font-bold text-primary-ink bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 shrink-0 inline-flex items-center gap-1 cursor-pointer"
+                            className="code-chip shrink-0"
                           >
                             <span>{item.code}</span>
                             {copiedSku === item.code ? <Check className="w-2.5 h-2.5 text-emerald-700" /> : <Copy className="w-2.5 h-2.5 opacity-50" />}
@@ -676,6 +673,6 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

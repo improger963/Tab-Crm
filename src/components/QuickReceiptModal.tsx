@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MODAL_BACKDROP, MODAL_SHELL } from '../lib/motionPresets';
 import { Printer, Copy, Check, X, CheckCircle2, Phone, MapPin, Tag } from 'lucide-react';
 import { Order, OrderStatus, PaymentStatus, SaleType, PaymentTerms } from '../types';
 import { posAudio } from '../lib/posAudio';
-import { calculateItemLineTotal, calculateItemDiscount, calculateItemLineSubtotal, getTodayLocalYMD } from '../lib/storage';
+import { calculateItemLineTotal, calculateItemDiscount, calculateItemLineSubtotal, calculateOrderSubtotal, getTodayLocalYMD } from '../lib/storage';
 
 interface QuickReceiptModalProps {
   order: Order | null;
@@ -14,10 +15,17 @@ interface QuickReceiptModalProps {
 export const QuickReceiptModal: React.FC<QuickReceiptModalProps> = ({ order, isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
 
-  if (!isOpen || !order) return null;
-
   const printTimestamp = new Date().toLocaleTimeString('hy-AM', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const todayYmd = getTodayLocalYMD();
+
+  // Real dram-value of all discounts (item-level + order-level).
+  // order.discount stores a raw PERCENT number when discountType === 'PERCENT',
+  // so it must never be printed as a ֏ amount directly.
+  const grossAmount = order ? (order.subtotalAmount ?? calculateOrderSubtotal(order.items || [])) : 0;
+  const totalDiscountAmount = order ? Math.max(0, grossAmount - (order.totalAmount || 0)) : 0;
+  const discountLabel = order?.discountType === 'PERCENT' && order.discount
+    ? `Զեղչ (${order.discount}%)`
+    : 'Զեղչ';
 
   const handlePrint = () => {
     posAudio.playScanBeep();
@@ -25,6 +33,7 @@ export const QuickReceiptModal: React.FC<QuickReceiptModalProps> = ({ order, isO
   };
 
   const handleCopySummary = () => {
+    if (!order) return;
     posAudio.playScanBeep();
     const itemsText = (order.items || [])
       .map((item, idx) => {
@@ -46,7 +55,7 @@ export const QuickReceiptModal: React.FC<QuickReceiptModalProps> = ({ order, isO
 ԱՊՐԱՆՔՆԵՐԻ ՑԱՆԿ:
 ${itemsText}
 ----------------------------------------
-${order.subtotalAmount && order.subtotalAmount !== order.totalAmount ? `Ենթագումար: ${order.subtotalAmount.toLocaleString()} ֏\n` : ''}${order.discount && order.discount > 0 ? `Զեղչ: -${order.discount.toLocaleString()} ֏\n` : ''}ԸՆԴՀԱՆՈՒՐ ԳՈՒՄԱՐ: ${(order.totalAmount || 0).toLocaleString()} ֏
+${order.subtotalAmount && order.subtotalAmount !== order.totalAmount ? `Ենթագումար: ${order.subtotalAmount.toLocaleString()} ֏\n` : ''}${totalDiscountAmount > 0 ? `${discountLabel}: -${totalDiscountAmount.toLocaleString()} ֏\n` : ''}ԸՆԴՀԱՆՈՒՐ ԳՈՒՄԱՐ: ${(order.totalAmount || 0).toLocaleString()} ֏
 ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${order.prepaymentAmount.toLocaleString()} ֏\n` : ''}${order.remainingBalance && order.remainingBalance > 0 ? `Ենթակա է վճարման: ${order.remainingBalance.toLocaleString()} ֏\n` : ''}Վճարում: ${order.paymentMethod || 'Կանխիկ'} (${order.paymentStatus})
 ----------------------------------------
 Շնորհակալություն գնումների համար:`;
@@ -58,21 +67,21 @@ ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${
 
   return (
     <AnimatePresence>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px]"
+      {isOpen && order && (
+      <motion.div
+        {...MODAL_BACKDROP}
+        className="modal-backdrop"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          {...MODAL_SHELL}
           role="dialog"
           aria-modal="true"
           aria-labelledby="receipt-title"
-          className="bg-surface rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]"
+          className="modal-shell w-full max-w-lg max-h-[92vh]"
         >
           {/* Header */}
-          <div className="px-5 py-3.5 bg-ink-inverse text-white flex items-center justify-between">
+          <div className="modal-header-dark px-5 py-3.5">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-white/10 rounded-lg border border-white/15">
                 <Printer className="w-[18px] h-[18px] text-white" aria-hidden="true" />
@@ -99,7 +108,7 @@ ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${
           <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100/70">
             <div 
               id="pos-thermal-receipt" 
-              className="bg-surface p-5 sm:p-6 rounded-xl border border-slate-300 font-mono text-xs text-slate-900 space-y-3.5 shadow-[0_2px_6px_rgb(var(--shadow-rgb)/0.08),0_12px_28px_-8px_rgb(var(--shadow-rgb)/0.12)] w-full max-w-[80mm] mx-auto relative print-receipt-wrapper"
+              className="bg-surface p-5 sm:p-6 rounded-xl border border-slate-300 font-mono text-xs text-slate-900 space-y-3.5 shadow-raised w-full max-w-[80mm] mx-auto relative print-receipt-wrapper"
             >
               
               {/* Receipt Top Header */}
@@ -212,10 +221,10 @@ ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${
                     <span className="font-mono font-bold">{order.subtotalAmount.toLocaleString()} ֏</span>
                   </div>
                 )}
-                {order.discount && order.discount > 0 && (
+                {totalDiscountAmount > 0 && (
                   <div className="flex justify-between text-slate-700 text-xs font-bold">
-                    <span>Ընդհանուր Զեղչ:</span>
-                    <span className="font-mono">-{order.discount.toLocaleString()} ֏</span>
+                    <span>{discountLabel}:</span>
+                    <span className="font-mono">-{totalDiscountAmount.toLocaleString()} ֏</span>
                   </div>
                 )}
                 
@@ -274,7 +283,7 @@ ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${
               type="button"
               onClick={handleCopySummary}
               aria-live="polite"
-              className="btn btn-md btn-ghost items-center gap-1.5"
+              className="btn btn-md btn-ghost items-center gap-1.5 active:scale-[0.98]"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-700" aria-hidden="true" /> : <Copy className="w-4 h-4 text-slate-600" aria-hidden="true" />}
               <span>{copied ? 'Պատճենված է!' : 'Պատճենել տեքստը'}</span>
@@ -283,14 +292,15 @@ ${order.prepaymentAmount && order.prepaymentAmount > 0 ? `Կանխավճար: ${
             <button
               type="button"
               onClick={handlePrint}
-              className="btn btn-md btn-primary items-center gap-2"
+              className="btn btn-md btn-primary items-center gap-2 active:scale-[0.98]"
             >
               <Printer className="w-4 h-4" aria-hidden="true" />
               <span>Տպել 80mm Կտրոնը (Print Receipt)</span>
             </button>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+      )}
     </AnimatePresence>
   );
 };

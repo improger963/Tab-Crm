@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { EASE_PREMIUM } from '../lib/motionPresets';
 import { 
   FileJson, 
   Download, 
@@ -18,7 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Order } from '../types';
-import { downloadOrdersAsJsonFile, parseOrdersJson, getJsonStorageSizeInKB } from '../lib/jsonStorage';
+import { downloadOrdersAsJsonFile, parseOrdersJson, getJsonStorageSizeInKB, getStorageUsageInfo } from '../lib/jsonStorage';
 
 interface JsonDatabasePageProps {
   orders: Order[];
@@ -40,10 +42,13 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
   const [showJsonPreview, setShowJsonPreview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const fileSizeKb = getJsonStorageSizeInKB(orders);
+  // localStorage capacity watchdog (~5MB browser quota per origin)
+  const usage = getStorageUsageInfo();
 
   // Download handler
   const handleDownload = () => {
@@ -71,7 +76,9 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
     }
 
     const reader = new FileReader();
+    setIsProcessingFile(true);
     reader.onload = (e) => {
+      setIsProcessingFile(false);
       const content = e.target?.result as string;
       if (!content) {
         onToast('warning', 'Ֆայլը դատարկ է:');
@@ -99,6 +106,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
     };
 
     reader.onerror = () => {
+      setIsProcessingFile(false);
       onToast('warning', 'Ֆայլի բացման սխալ:');
     };
 
@@ -158,7 +166,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
 
       {/* Overview Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Պատվերներ</span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-primary-ink flex items-center justify-center">
@@ -171,7 +179,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
           </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Շրջանառություն</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
@@ -186,7 +194,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
           </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ֆայլի Ծավալը</span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
@@ -197,9 +205,20 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
             <span className="text-xl sm:text-2xl font-bold text-slate-900 font-mono">{fileSizeKb}</span>
             <span className="text-xs text-slate-500 font-medium">KB</span>
           </div>
+          <div className="mt-2.5">
+            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden" role="progressbar" aria-valuenow={Math.round(usage.usedPct)} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${usage.usedPct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                style={{ width: `${Math.max(2, usage.usedPct)}%` }}
+              />
+            </div>
+            <p className="text-2xs text-slate-400 font-medium mt-1">
+              Ընդհանուր պահեստը՝ {usage.usedPct.toFixed(1)}% 5 ՄԲ-ից
+            </p>
+          </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Պահպանման Տիպ</span>
             <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
@@ -211,6 +230,28 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Storage Capacity Warning Banner (appears only when approaching the ~5MB quota) */}
+      {usage.nearLimit && (
+        <div className="flex items-start gap-3 p-4 sm:p-5 rounded-xl border border-amber-300/70 bg-amber-50/80 text-amber-900">
+          <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold uppercase tracking-wide">Սպառնում է վերջանալ տեղական պահեստը</h4>
+            <p className="text-xs font-medium leading-relaxed">
+              localStorage-ը զբաղված է՝ {usage.usedPct.toFixed(1)}% {Math.round(usage.quotaBytes / 1024 / 1024)} ՄԲ-ից։
+              Խնդրում ենք արտահանել JSON բեքափ և հեռացնել հին պատվերները, մինչև գրառումները դադարելու են։
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="ml-auto shrink-0 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-2xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Բեքափ</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Operations: Export & Import */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -249,7 +290,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full py-3.5 px-4 bg-primary hover:bg-primary-strong text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer"
+              className="btn btn-md btn-primary w-full !py-3.5 !rounded-2xl"
             >
               <Download className="w-4 h-4" />
               <span>Ներբեռնել Պատվերների JSON Ֆայլը ({orders.length} հատ)</span>
@@ -258,7 +299,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
             <button
               type="button"
               onClick={handleCopyJson}
-              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+              className="btn btn-soft w-full !py-2.5 !rounded-xl"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-slate-500" />}
               <span>{copied ? 'Պատճենված է' : 'Պատճենել JSON Տեքստը'}</span>
@@ -288,7 +329,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
               <button
                 type="button"
                 onClick={() => setImportMode('replace')}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
                   importMode === 'replace'
                     ? 'bg-surface text-primary-ink shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -299,7 +340,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
               <button
                 type="button"
                 onClick={() => setImportMode('merge')}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
                   importMode === 'merge'
                     ? 'bg-surface text-primary-ink shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -321,7 +362,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
                 isDragging
                   ? 'border-indigo-500 bg-indigo-50/50'
                   : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'
-              }`}
+              } ${isProcessingFile ? 'opacity-70 pointer-events-none' : ''}`}
             >
               <input
                 ref={fileInputRef}
@@ -334,6 +375,11 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
               <div className="w-10 h-10 rounded-full bg-surface shadow-2xs border border-slate-200 flex items-center justify-center mx-auto text-primary-ink mb-2">
                 <FileJson className="w-5 h-5" />
               </div>
+              {isProcessingFile && (
+                <div className="max-w-[10rem] mx-auto mt-1">
+                  <div className="preloader-bar" />
+                </div>
+              )}
               <p className="text-xs font-bold text-slate-800">
                 Սեղմեք կամ քաշեք `.json` ֆայլն այստեղ
               </p>
@@ -363,7 +409,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
         <button
           type="button"
           onClick={() => setShowJsonPreview(!showJsonPreview)}
-          className="w-full p-5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer text-left"
+          className="w-full p-5 flex items-center justify-between row-interactive transition cursor-pointer text-left"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -383,14 +429,22 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
           </span>
         </button>
 
-        {showJsonPreview && (
+        <AnimatePresence initial={false}>
+          {showJsonPreview && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.24, ease: EASE_PREMIUM }}
+              className="overflow-hidden"
+            >
           <div className="p-5 border-t border-white/10 bg-ink-inverse text-white/90 font-mono text-xs relative">
             <div className="flex items-center justify-between pb-3 border-b border-white/10 text-2xs text-white/55">
               <span>Տեսք՝ JSON Array ({orders.length} items)</span>
               <button
                 type="button"
                 onClick={handleCopyJson}
-                className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-white font-bold transition flex items-center gap-1 cursor-pointer"
+                className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-white font-bold transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
               >
                 {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                 <span>{copied ? 'Պատճենված' : 'Պատճենել'}</span>
@@ -401,7 +455,9 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
               {orders.length > 5 && `\n// ... և ևս ${orders.length - 5} պատվեր`}
             </pre>
           </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Danger & Reset Zone */}
@@ -419,7 +475,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
           <button
             type="button"
             onClick={onResetToDemo}
-            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-surface hover:bg-slate-100 text-slate-700 border border-slate-200/90 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-2xs"
+            className="btn btn-ghost flex-1 sm:flex-initial"
           >
             <Sparkles className="w-3.5 h-3.5 text-primary-ink" />
             <span>Օրինակելի Տվյալներ</span>
@@ -435,21 +491,21 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
               <span>Մաքրել Բազան</span>
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 animate-rise-in">
               <button
                 type="button"
                 onClick={() => {
                   onClearDatabase();
                   setConfirmClearOpen(false);
                 }}
-                className="px-3.5 py-2.5 bg-danger hover:opacity-90 transition-opacity text-white rounded-xl text-xs font-bold transition cursor-pointer active:scale-95"
+                className="px-3.5 py-2.5 bg-danger hover:opacity-90 text-white rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95"
               >
                 Հաստատել Ջնջելը
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmClearOpen(false)}
-                className="px-3 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                className="px-3 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95"
               >
                 Չեղարկել
               </button>

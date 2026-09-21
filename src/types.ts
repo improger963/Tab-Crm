@@ -53,15 +53,6 @@ export interface OrderEvent {
   timestamp: string; // ISO string
 }
 
-export interface Client {
-  id: string;
-  name: string;
-  phone: string;
-  totalOrders: number;
-  lastOrderDate: string;
-  createdAt: string;
-}
-
 export interface Order {
   id: string;
   customerName: string;
@@ -93,10 +84,4 @@ export interface Order {
   latitude: number;
   longitude: number;
   events: OrderEvent[];
-}
-
-export interface SpreadsheetInfo {
-  id: string;
-  name: string;
-  url: string;
 }

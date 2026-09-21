@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import SelectField from './SelectField';
+import { MICRO_ENTER } from '../lib/motionPresets';
 import { 
   ShoppingBag, Truck, Store, Phone, Copy, Check, 
   Search, ArrowUpDown, ChevronRight, Inbox, Eye, FileText, Calendar,
@@ -472,10 +474,10 @@ export default function OrderFeed({
             setDateFilter('all');
             setCustomDate('');
           }}
-          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all hover:-translate-y-px active:scale-[0.99] cursor-pointer ${
             effectiveStatusFilter === 'Բոլորը' && dateFilter === 'all'
-              ? 'bg-primary text-white border-transparent shadow-[0_2px_8px_-2px_rgb(var(--shadow-rgb)/0.25),inset_0_1px_0_var(--fill-highlight)]'
-              : 'bg-surface hover:bg-slate-50/80 text-slate-800 border-slate-200/80 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)]'
+              ? 'bg-primary text-white border-transparent shadow-fill-strong'
+              : 'bg-surface hover:bg-slate-50/80 text-slate-800 border-slate-200/80 shadow-card'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
@@ -506,9 +508,9 @@ export default function OrderFeed({
             posAudio.playScanBeep();
             setEffectiveStatusFilter(OrderStatus.IN_TRANSIT);
           }}
-          className={`kpi-card ${
+          className={`kpi-card hover:-translate-y-px active:scale-[0.99] ${
             effectiveStatusFilter === OrderStatus.IN_TRANSIT || effectiveStatusFilter === 'Առաքման մեջ'
-              ? 'bg-info text-white border-transparent shadow-[0_2px_8px_-2px_rgb(var(--shadow-rgb)/0.25),inset_0_1px_0_var(--fill-highlight)]'
+              ? 'bg-info text-white border-transparent shadow-fill-strong'
               : 'bg-surface hover:bg-sky-50/40 text-slate-800 border-slate-200/80'
           }`}
         >
@@ -537,9 +539,9 @@ export default function OrderFeed({
             posAudio.playScanBeep();
             setEffectiveStatusFilter(OrderStatus.PENDING);
           }}
-          className={`kpi-card ${
+          className={`kpi-card hover:-translate-y-px active:scale-[0.99] ${
             effectiveStatusFilter === OrderStatus.PENDING || effectiveStatusFilter.includes('Սպասում')
-              ? 'bg-warning text-white border-transparent shadow-[0_2px_8px_-2px_rgb(var(--shadow-rgb)/0.25),inset_0_1px_0_var(--fill-highlight)]'
+              ? 'bg-warning text-white border-transparent shadow-fill-strong'
               : 'bg-surface hover:bg-amber-50/40 text-slate-800 border-slate-200/80'
           }`}
         >
@@ -568,9 +570,9 @@ export default function OrderFeed({
             posAudio.playScanBeep();
             setEffectiveStatusFilter(OrderStatus.SOLD);
           }}
-          className={`kpi-card ${
+          className={`kpi-card hover:-translate-y-px active:scale-[0.99] ${
             effectiveStatusFilter === OrderStatus.SOLD || effectiveStatusFilter.includes('Վաճառված')
-              ? 'bg-info text-white border-transparent shadow-[0_2px_8px_-2px_rgb(var(--shadow-rgb)/0.25),inset_0_1px_0_var(--fill-highlight)]'
+              ? 'bg-info text-white border-transparent shadow-fill-strong'
               : 'bg-surface hover:bg-sky-50/40 text-slate-800 border-slate-200/80'
           }`}
         >
@@ -599,9 +601,9 @@ export default function OrderFeed({
             posAudio.playScanBeep();
             setEffectiveStatusFilter(OrderStatus.DELIVERED);
           }}
-          className={`kpi-card col-span-2 sm:col-span-1 ${
+          className={`kpi-card col-span-2 sm:col-span-1 hover:-translate-y-px active:scale-[0.99] ${
             effectiveStatusFilter === OrderStatus.DELIVERED || effectiveStatusFilter.includes('Ավարտված')
-              ? 'bg-success text-white border-transparent shadow-[0_2px_8px_-2px_rgb(var(--shadow-rgb)/0.25),inset_0_1px_0_var(--fill-highlight)]'
+              ? 'bg-success text-white border-transparent shadow-fill-strong'
               : 'bg-surface hover:bg-emerald-50/40 text-slate-800 border-slate-200/80'
           }`}
         >
@@ -626,7 +628,7 @@ export default function OrderFeed({
       </div>
 
       {/* Smart Filters and Search Toolbar */}
-      <div className="bg-surface/95 backdrop-blur-xs p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)] space-y-3">
+      <div className="bg-surface/95 backdrop-blur-xs p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-card space-y-3">
         {/* Row 1: Date Pills & Calendar Picker */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           {/* Quick Date Pills */}
@@ -645,9 +647,9 @@ export default function OrderFeed({
                   setDateFilter(tab.id as any);
                   setCustomDate('');
                 }}
-                className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer whitespace-nowrap text-xs ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-all active:scale-[0.97] cursor-pointer whitespace-nowrap text-xs ${
                   dateFilter === tab.id 
-                    ? 'bg-surface text-slate-900 font-semibold shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.08),0_0_0_1px_rgb(var(--shadow-rgb)/0.04)]' 
+                    ? 'bg-surface text-slate-900 font-semibold shadow-edge' 
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -697,14 +699,15 @@ export default function OrderFeed({
           {/* Status Select */}
           <div className="flex items-center gap-1.5 bg-slate-50/80 border border-slate-200/90 rounded-lg px-2.5 py-1.5">
             <span className="text-xs font-medium text-slate-400 whitespace-nowrap">Կարգավիճակ՝</span>
-            <select
+            <SelectField
               aria-label="Կարգավիճակ"
               value={effectiveStatusFilter}
-              onChange={(e) => {
+              onChange={(v) => {
                 posAudio.playScanBeep();
-                setEffectiveStatusFilter(e.target.value);
+                setEffectiveStatusFilter(v);
               }}
-              className="w-full text-xs font-semibold text-slate-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              size="bare"
+              className="max-w-full"
             >
               <option value="Բոլորը">Բոլոր կարգավիճակները</option>
               <option value={OrderStatus.PENDING}>Սպասում է դրամարկղին</option>
@@ -712,45 +715,47 @@ export default function OrderFeed({
               <option value={OrderStatus.IN_TRANSIT}>Առաքման մեջ</option>
               <option value={OrderStatus.DELIVERED}>Ավարտված / Հանձնված</option>
               <option value={OrderStatus.CANCELLED}>Չեղարկված</option>
-            </select>
+            </SelectField>
           </div>
 
           {/* Sale Type Select */}
           <div className="flex items-center gap-1.5 bg-slate-50/80 border border-slate-200/90 rounded-lg px-2.5 py-1.5">
             <span className="text-xs font-medium text-slate-400 whitespace-nowrap">Տեսակ՝</span>
-            <select
+            <SelectField
               aria-label="Տեսակ"
               value={saleTypeFilter}
-              onChange={(e) => {
+              onChange={(v) => {
                 posAudio.playScanBeep();
-                setSaleTypeFilter(e.target.value as any);
+                setSaleTypeFilter(v as any);
               }}
-              className="w-full text-xs font-semibold text-slate-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              size="bare"
+              className="max-w-full"
             >
               <option value="all">Բոլոր տեսակները</option>
               <option value="delivery">Առաքում (Delivery)</option>
               <option value="onsite">Խանութում (On-site)</option>
               <option value="pickup">Մոտեցնել խանութ (Pickup)</option>
-            </select>
+            </SelectField>
           </div>
 
           {/* Payment Status Select */}
           <div className="flex items-center gap-1.5 bg-slate-50/80 border border-slate-200/90 rounded-lg px-2.5 py-1.5">
             <span className="text-xs font-medium text-slate-400 whitespace-nowrap">Վճարում՝</span>
-            <select
+            <SelectField
               aria-label="Վճարում"
               value={paymentFilter}
-              onChange={(e) => {
+              onChange={(v) => {
                 posAudio.playScanBeep();
-                setPaymentFilter(e.target.value as any);
+                setPaymentFilter(v as any);
               }}
-              className="w-full text-xs font-semibold text-slate-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              size="bare"
+              className="max-w-full"
             >
               <option value="all">Բոլոր վճարումները</option>
               <option value="paid">Վճարված</option>
               <option value="unpaid">Չվճարված</option>
               <option value="partial">Մասնակի</option>
-            </select>
+            </SelectField>
           </div>
 
           {/* Search Input with Instant Clear */}
@@ -837,7 +842,7 @@ export default function OrderFeed({
       </div>
 
       {/* Sub-bar: Results count, View Mode, Sort & Export */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-surface/95 backdrop-blur-xs px-3 sm:px-4 py-2 rounded-lg border border-slate-200/80 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.03)]">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-surface/95 backdrop-blur-xs px-3 sm:px-4 py-2 rounded-lg border border-slate-200/80 shadow-2xs">
         
         {/* Left: Filtered count & Total Sum */}
         <div className="flex items-center gap-3">
@@ -867,7 +872,7 @@ export default function OrderFeed({
                 posAudio.playScanBeep();
                 setViewMode('table');
               }}
-              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === 'table' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
+              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'table' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
               title="Աղյուսակային տեսք"
             >
               <List className="w-3.5 h-3.5" />
@@ -877,7 +882,7 @@ export default function OrderFeed({
                 posAudio.playScanBeep();
                 setViewMode('grid');
               }}
-              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
+              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'grid' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
               title="Քարտային տեսք"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -885,14 +890,16 @@ export default function OrderFeed({
           </div>
 
           <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-            <select
+            <SelectField
               aria-label="Դասավորման կարգ"
               value={sortBy}
-              onChange={(e) => {
+              onChange={(v) => {
                 posAudio.playScanBeep();
-                setSortBy(e.target.value as any);
+                setSortBy(v as any);
               }}
-              className="w-full sm:w-auto text-xs font-medium text-slate-700 bg-surface border border-slate-200 hover:border-slate-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer shadow-2xs"
+              size="sm"
+              align="right"
+              className="shadow-2xs"
             >
               <option value="date-desc">Նորերը սկզբում (Ամսաթիվ)</option>
               <option value="date-asc">Հները սկզբում (Ամսաթիվ)</option>
@@ -900,12 +907,12 @@ export default function OrderFeed({
               <option value="id-desc">ID Ըստ նվազման (→ 1000)</option>
               <option value="amount-desc">Գումարով (Նվազման)</option>
               <option value="amount-asc">Գումարով (Աճման)</option>
-            </select>
+            </SelectField>
           </div>
 
           <button
             onClick={handleExportCSV}
-            className="px-2.5 sm:px-3 py-1.5 bg-surface hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1 shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+            className="btn btn-ghost shrink-0"
             title="Արտահանել POS/Excel CSV"
           >
             <Download className="w-3.5 h-3.5 text-slate-400" />
@@ -915,7 +922,7 @@ export default function OrderFeed({
           {onClearAllOrders && (
             <button
               onClick={onClearAllOrders}
-              className="px-2.5 sm:px-3 py-1.5 bg-rose-50/60 hover:bg-rose-50 text-rose-700 border border-rose-200/70 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1 shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+              className="btn btn-soft-danger shrink-0"
               title="Մաքրել բոլոր պատվերները (Սկսել 0-ից)"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
@@ -926,9 +933,13 @@ export default function OrderFeed({
       </div>
 
       {isLoading ? (
-        <div className="solid-card p-8 space-y-4">
+        <div className="solid-card p-6 sm:p-8 space-y-3">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="skeleton h-5 w-28" />
+            <div className="skeleton h-5 w-20" />
+          </div>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-14 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-lg animate-shimmer" style={{ animationDelay: `${i * 0.12}s` }} />
+            <div key={i} className="skeleton h-14" style={{ animationDelay: `${i * 0.1}s` }} />
           ))}
         </div>
       ) : (
@@ -961,9 +972,16 @@ export default function OrderFeed({
                 )}
               </motion.div>
             ) : viewMode === 'table' ? (
-              <div className="flex flex-col space-y-3">
+              <motion.div
+                key="table-view"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={MICRO_ENTER}
+                className="flex flex-col space-y-3"
+              >
                 {/* Desktop View Table Card */}
-                <div className="hidden md:block bg-surface rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)] overflow-hidden">
+                <div className="hidden md:block bg-surface rounded-xl border border-slate-200/80 shadow-card overflow-hidden">
                   <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-separate border-spacing-0">
                       <thead>
@@ -992,7 +1010,7 @@ export default function OrderFeed({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {sortedOrders.map((order) => {
+                        {sortedOrders.map((order, orderIdx) => {
                           const isSel = selectedOrderId === order.id;
                           const skuCodes = (order.items || []).map(i => i.code).filter(Boolean);
                           const totalItemCount = (order.items || []).reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -1012,16 +1030,17 @@ export default function OrderFeed({
                           return (
                             <tr
                               key={order.id}
+                              style={{ animationDelay: `${Math.min(orderIdx, 14) * 0.025}s` }}
                               onClick={() => onSelectOrder(order)}
-                              className={`group cursor-pointer transition-colors duration-150 ${
-                                isSel ? 'bg-indigo-50/60 shadow-[inset_2px_0_0_var(--color-primary)]' : 'hover:bg-slate-50/70'
+                              className={`group cursor-pointer animate-rise-in row-interactive ${
+                                isSel ? '!bg-indigo-50/60 shadow-[inset_2px_0_0_var(--color-primary)]' : ''
                               }`}
                             >
                               {/* Order ID, Sale Type & Date */}
                               <td className="pl-6 pr-4 py-3 align-top">
                                 <div className="space-y-1.5">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs font-semibold text-slate-900 bg-slate-100 px-1.5 py-px rounded border border-slate-200/80 tabular-nums">
+                                    <span className="slate-chip tabular-nums">
                                       {order.id}
                                     </span>
                                     <span className={`badge ${saleTypeInfo.badgeClass}`}>
@@ -1077,7 +1096,7 @@ export default function OrderFeed({
                                             type="button"
                                             onClick={(e) => handleCopy(item.code, e)}
                                             title="Կոդ (POS)"
-                                            className="font-mono text-xs font-semibold text-primary-ink bg-indigo-50/90 hover:bg-indigo-100 px-1.5 py-px rounded border border-indigo-200/80 inline-flex items-center gap-1 transition-all duration-150 active:scale-[0.97] cursor-pointer shadow-2xs"
+                                            className="code-chip"
                                           >
                                             <span>{item.code}</span>
                                             {copiedText === item.code ? (
@@ -1092,7 +1111,7 @@ export default function OrderFeed({
                                             type="button"
                                             onClick={(e) => handleCopy(item.artikul!, e)}
                                             title="Արտիկուլ (Գործարանային)"
-                                            className="font-mono text-2xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 px-1.5 py-px rounded border border-amber-200/80 inline-flex items-center gap-1 transition-all duration-150 active:scale-[0.97] cursor-pointer shadow-2xs"
+                                            className="amber-chip hover:bg-amber-100 active:scale-[0.97] cursor-pointer"
                                           >
                                             <span>{item.artikul}</span>
                                           </button>
@@ -1160,7 +1179,7 @@ export default function OrderFeed({
                                     <button
                                       type="button"
                                       onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                                      className="px-2 py-1 bg-success hover:bg-success/90 text-white rounded-md text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                                      className="btn btn-success !px-2 !py-1 !text-2xs"
                                       title="Արագ հաստատել POS վաճառքը"
                                     >
                                       <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -1171,7 +1190,7 @@ export default function OrderFeed({
                                     <button
                                       type="button"
                                       onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                                      className="px-2 py-1 bg-info hover:bg-info-strong text-white rounded-md text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                                      className="btn btn-info !px-2 !py-1 !text-2xs"
                                       title="Փոխանցել առաքիչին"
                                     >
                                       <Truck className="w-2.5 h-2.5" />
@@ -1182,7 +1201,7 @@ export default function OrderFeed({
                                     <button
                                       type="button"
                                       onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                                      className="px-2 py-1 bg-success hover:bg-success/90 text-white rounded-md text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                                      className="btn btn-success !px-2 !py-1 !text-2xs"
                                       title="Նշել որպես առաքված"
                                     >
                                       <CheckCircle2 className="w-2.5 h-2.5" />
@@ -1261,7 +1280,7 @@ export default function OrderFeed({
 
                 {/* Mobile View Cards (Hidden on MD+) */}
                 <div className="block md:hidden space-y-3 overflow-y-auto no-scrollbar pb-10">
-                  {sortedOrders.map((order) => {
+                  {sortedOrders.map((order, orderIdx) => {
                     const isSel = selectedOrderId === order.id;
                     const skuCodes = (order.items || []).map(i => i.code).filter(Boolean);
                     const saleTypeInfo = getSaleTypeBadge(order.saleType || SaleType.ON_SITE);
@@ -1270,11 +1289,12 @@ export default function OrderFeed({
                     return (
                       <div
                         key={order.id}
+                        style={{ animationDelay: `${Math.min(orderIdx, 10) * 0.03}s` }}
                         onClick={() => onSelectOrder(order)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer space-y-3 ${
+                        className={`p-4 rounded-xl border animate-rise-in transition-all cursor-pointer space-y-3 ${
                           isSel
                             ? 'bg-indigo-50/70 border-primary-ink/60 ring-2 ring-primary-ink/25'
-                            : 'bg-surface border-slate-200/80 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)]'
+                            : 'bg-surface border-slate-200/80 shadow-card'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1303,7 +1323,7 @@ export default function OrderFeed({
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-semibold text-slate-900 font-mono tabular-nums">
-                              {(order.totalAmount || 0).toLocaleString()} AMD
+                              {(order.totalAmount || 0).toLocaleString()} ֏
                             </p>
                             <span className={`badge mt-0.5 ${getPaymentBadge(order.paymentStatus || PaymentStatus.UNPAID)}`}>
                               {order.paymentStatus || PaymentStatus.UNPAID}
@@ -1323,11 +1343,18 @@ export default function OrderFeed({
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
             ) : (
               /* Grid / Touch Screen Card View */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto no-scrollbar pb-10">
-                {sortedOrders.map((order) => {
+              <motion.div
+                key="grid-view"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={MICRO_ENTER}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto no-scrollbar pb-10"
+              >
+                {sortedOrders.map((order, orderIdx) => {
                   const isSel = selectedOrderId === order.id;
                   const skuCodes = (order.items || []).map(i => i.code).filter(Boolean);
                   const saleTypeInfo = getSaleTypeBadge(order.saleType || SaleType.ON_SITE);
@@ -1336,11 +1363,12 @@ export default function OrderFeed({
                   return (
                     <div
                       key={order.id}
+                      style={{ animationDelay: `${Math.min(orderIdx, 12) * 0.03}s` }}
                       onClick={() => onSelectOrder(order)}
-                      className={`p-5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between gap-4 ${
+                      className={`p-5 rounded-xl border animate-rise-in transition-all duration-200 cursor-pointer flex flex-col justify-between gap-4 ${
                         isSel
                           ? 'bg-indigo-50/70 border-primary-ink ring-2 ring-primary-ink/25'
-                          : 'bg-surface border-slate-200/80 hover:border-slate-300 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)] hover:shadow-md'
+                          : 'bg-surface border-slate-200/80 hover:border-slate-300 hover:-translate-y-px shadow-card hover:shadow-md'
                       }`}
                     >
                       <div className="space-y-3">
@@ -1393,7 +1421,7 @@ export default function OrderFeed({
                         <div>
                           <span className="text-2xs text-slate-400 font-medium uppercase block">Ընդհանուր</span>
                           <span className="text-sm font-semibold text-slate-900 font-mono tabular-nums">
-                            {(order.totalAmount || 0).toLocaleString()} <span className="text-2xs font-normal text-slate-500">AMD</span>
+                            {(order.totalAmount || 0).toLocaleString()} <span className="text-2xs font-normal text-slate-500">֏</span>
                           </span>
                         </div>
 
@@ -1403,7 +1431,7 @@ export default function OrderFeed({
                             <button
                               type="button"
                               onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                              className="px-2.5 py-1.5 bg-success hover:bg-success/90 text-white rounded-lg text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                              className="btn btn-success !px-2.5 !py-1.5 !text-2xs"
                               title="Արագ հաստատել POS վաճառքը"
                             >
                               <Check className="w-3 h-3 stroke-[3]" />
@@ -1414,7 +1442,7 @@ export default function OrderFeed({
                             <button
                               type="button"
                               onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                              className="px-2.5 py-1.5 bg-info hover:bg-info-strong text-white rounded-lg text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                              className="btn btn-info !px-2.5 !py-1.5 !text-2xs"
                               title="Փոխանցել առաքիչին"
                             >
                               <Truck className="w-3 h-3" />
@@ -1425,7 +1453,7 @@ export default function OrderFeed({
                             <button
                               type="button"
                               onClick={(e) => handleQuickAdvanceStatus(e, order)}
-                              className="px-2.5 py-1.5 bg-success hover:bg-success/90 text-white rounded-lg text-2xs font-semibold shadow-[inset_0_1px_0_var(--fill-highlight)] transition-all duration-150 active:scale-[0.97] flex items-center gap-1 cursor-pointer"
+                              className="btn btn-success !px-2.5 !py-1.5 !text-2xs"
                               title="Նշել որպես առաքված"
                             >
                               <CheckCircle2 className="w-3 h-3" />
@@ -1482,7 +1510,7 @@ export default function OrderFeed({
                     </div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>

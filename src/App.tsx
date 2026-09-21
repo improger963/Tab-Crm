@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Globe, 
   Plus, 
@@ -36,6 +36,7 @@ import {
   Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { EASE_PREMIUM, EASE_IN_FAST } from './lib/motionPresets';
 
 // Components
 import OrderFeed from './components/OrderFeed';
@@ -56,10 +57,20 @@ import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 // Types & Libs
 import { Order, OrderStatus, PaymentStatus, SaleType } from './types';
-import { getStoredData, saveOrder, updateOrder, deleteOrder, clearAllOrders, resetToDemoOrders } from './lib/storage';
-import { downloadOrdersAsJsonFile } from './lib/jsonStorage';
+import { getStoredData, saveOrder, updateOrder, deleteOrder, clearAllOrders, resetToDemoOrders, importOrdersIntoStorage } from './lib/storage';
+import { downloadOrdersAsJsonFile, getStorageUsageInfo } from './lib/jsonStorage';
+import { applyStatusTransition, wouldCompleteUnpaidOrder, UNPAID_COMPLETION_WARNING } from './lib/orderRules';
 
 type View = 'dashboard' | 'orders' | 'create-order' | 'view-order' | 'edit-order' | 'json-database' | 'reports';
+
+/* ONE motion language for every page swap — pure transform glide, no fade:
+   the outgoing page hands off fast (ease-in), the incoming page settles with
+   --ease-premium from index.css. AnimatePresence mode="wait" makes it a relay. */
+const PAGE_VARIANTS = {
+  initial: { y: 18 },
+  animate: { y: 0, transition: { duration: 0.34, ease: EASE_PREMIUM } },
+  exit: { y: -12, transition: { duration: 0.18, ease: EASE_IN_FAST } },
+};
 
 
 export interface InAppNotification {
@@ -111,6 +122,18 @@ export default function App() {
   }, [orders, currentOrderId]);
   
   const { toasts, addToast, removeToast } = useToast();
+
+  // localStorage capacity watchdog — the whole "database" lives in localStorage
+  // (~5MB per origin). Nudge the cashier to export a JSON backup once per session
+  // as soon as the footprint crosses the safety threshold (80%).
+  const storageWarnShownRef = useRef(false);
+  const warnStorageIfNeeded = () => {
+    if (storageWarnShownRef.current) return;
+    const { nearLimit, usedPct } = getStorageUsageInfo();
+    if (!nearLimit) return;
+    storageWarnShownRef.current = true;
+    addToast('warning', `⚠️ Տեղական պահեստը լիցքավորված է՝ ${Math.round(usedPct)}% (5ՄԲ-ից)։ Խնդրում ենք արտահանել JSON բեքափ (Կողմնացույց → Արտահանել JSON), որպեսզի տվյալներ չկորցնեք։`);
+  };
 
   // In-App Notification Center Setup
   const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
@@ -315,18 +338,19 @@ export default function App() {
 
   // Local JSON Database Handlers
   const handleImportOrdersFromJson = (importedOrders: Order[], mode: 'replace' | 'merge') => {
-    let updated: Order[];
-    if (mode === 'replace') {
-      updated = importedOrders;
-    } else {
-      const existingIds = new Set(orders.map(o => o.id));
-      const newItems = importedOrders.filter(o => !existingIds.has(o.id));
-      updated = [...newItems, ...orders];
-    }
-    localStorage.setItem('crm_orders', JSON.stringify(updated));
+    // ID-collision-hardened import: duplicates are skipped, clashes renumbered,
+    // so the resulting dataset can never contain two orders with the same ID.
+    const { orders: updated, skippedDuplicates, renumbered } = importOrdersIntoStorage(orders, importedOrders, mode);
     setOrders(updated);
     if (updated.length > 0) {
       setCurrentOrderId(updated[0].id);
+    }
+    warnStorageIfNeeded();
+    if (skippedDuplicates > 0) {
+      addToast('save', `Նկատվեցին ${skippedDuplicates} կրկնօրինակ պատվեր (նույն ID-ով) և բաց թողնվեցին։`);
+    }
+    if (renumbered > 0) {
+      addToast('save', `${renumbered} պատվերի ID-ը փոխվեց՝ ID-ների բախումից խուսափելու համար։`);
     }
   };
 
@@ -378,6 +402,7 @@ export default function App() {
     setCurrentOrderId(orderWithHistory.id);
     setActiveView('view-order');
     addToast('success', 'Պատվերը հաջողությամբ գրանցվեց');
+    warnStorageIfNeeded();
 
     if (shouldPrint) {
       setActiveView('reports');
@@ -399,10 +424,10 @@ export default function App() {
     const targetStatus = updates.status || existingOrder.status;
     const targetPaymentStatus = updates.paymentStatus || existingOrder.paymentStatus;
 
-    // Rule 6: Block completing an unpaid order
-    if (targetStatus === OrderStatus.DELIVERED && targetPaymentStatus !== PaymentStatus.PAID) {
+    // Rule 6 (lib/orderRules): Block completing an unpaid order
+    if (wouldCompleteUnpaidOrder(targetStatus, targetPaymentStatus)) {
       posAudio.playErrorBeep();
-      addToast('warning', '⚠️ Վճարումը հաստատված չէ: Պատվերը հնարավոր չէ ավարտել, քանի դեռ վճարումը չի հաստատվել (Լրիվ վճարված):');
+      addToast('warning', UNPAID_COMPLETION_WARNING);
       return;
     }
     
@@ -421,31 +446,35 @@ export default function App() {
       timestamp: new Date().toISOString()
     });
 
-    const { orders: updatedOrders } = updateOrder(orderId, { ...updates, events: newEvents });
+    const mergedUpdates: Partial<Order> = { ...updates, events: newEvents };
+
+    // Keep statusHistory complete no matter which path changed the status
+    // (previously only the status-button flow in handleUpdateStatus logged it).
+    if (targetStatus !== existingOrder.status && !updates.statusHistory) {
+      mergedUpdates.statusHistory = [
+        ...(existingOrder.statusHistory || []),
+        { status: targetStatus, timestamp: new Date().toISOString() }
+      ];
+    }
+
+    const { orders: updatedOrders } = updateOrder(orderId, mergedUpdates);
     setOrders(updatedOrders);
     setCurrentOrderId(orderId);
     setActiveView('view-order');
     addToast('save', 'Փոփոխությունները պահպանված են');
+    warnStorageIfNeeded();
   };
 
   const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
     const currentOrder = orders.find(o => o.id === orderId);
     if (!currentOrder) return;
 
-    let targetStatus = newStatus;
-    let targetPaymentStatus = currentOrder.paymentStatus;
-
-    // Rule 3: For In-Store sale (SaleType.ON_SITE), confirming POS or changing status automatically sets DELIVERED and PAID
-    const isOnSite = (currentOrder.saleType || SaleType.ON_SITE) === SaleType.ON_SITE;
-    if (isOnSite && (newStatus === OrderStatus.SOLD || newStatus === OrderStatus.DELIVERED)) {
-      targetStatus = OrderStatus.DELIVERED;
-      targetPaymentStatus = PaymentStatus.PAID;
-    }
-
-    // Rule 6: Block completing an unpaid order
-    if (targetStatus === OrderStatus.DELIVERED && targetPaymentStatus !== PaymentStatus.PAID) {
+    // Rules 3 & 6 (lib/orderRules): in-store POS confirmation auto-completes the
+    // order (DELIVERED + PAID), and completing an unpaid order is always blocked.
+    const { targetStatus, targetPaymentStatus, blocked } = applyStatusTransition(currentOrder, newStatus);
+    if (blocked) {
       posAudio.playErrorBeep();
-      addToast('warning', '⚠️ Վճարումը հաստատված չէ: Պատվերը հնարավոր չէ ավարտել, քանի դեռ վճարումը չի հաստատվել (Լրիվ վճարված):');
+      addToast('warning', UNPAID_COMPLETION_WARNING);
       return;
     }
 
@@ -465,6 +494,7 @@ export default function App() {
       events: newEvents
     });
     setOrders(updatedOrders);
+    warnStorageIfNeeded();
 
     if (targetStatus === OrderStatus.SOLD || targetStatus === OrderStatus.DELIVERED || targetPaymentStatus === PaymentStatus.PAID) {
       posAudio.playCashRegisterSound();
@@ -472,8 +502,9 @@ export default function App() {
       posAudio.playSuccessChime();
     }
 
-    // Trigger in-app notifications
-    if (newStatus === OrderStatus.DELIVERED) {
+    // Trigger in-app notifications. Note: report the FINAL (rule-mapped) status,
+    // so in-store POS confirmations correctly announce completion.
+    if (targetStatus === OrderStatus.DELIVERED) {
       if (isAlertEnabled) {
         triggerNotification(
           'ՊԱՏՎԵՐՆ ԱՎԱՐՏՎԵԼ Է',
@@ -483,12 +514,12 @@ export default function App() {
         );
         addToast('success', `🎉 Պատվերն Ավարտված է՝ ${currentOrder.customerName || ''}`);
       } else {
-        addToast('save', `Կարգավիճակը թարմացվել է՝ ${newStatus}`);
+        addToast('save', `Կարգավիճակը թարմացվել է՝ ${targetStatus}`);
       }
     } else {
       let type: 'info' | 'warning' = 'info';
-      let ArmenianStatus = newStatus;
-      if (newStatus === OrderStatus.CANCELLED) {
+      let ArmenianStatus = targetStatus;
+      if (targetStatus === OrderStatus.CANCELLED) {
         type = 'warning';
       }
       
@@ -498,7 +529,7 @@ export default function App() {
         type,
         currentOrder.id
       );
-      addToast('save', `Կարգավիճակը թարմացվել է՝ ${newStatus}`);
+      addToast('save', `Կարգավիճակը թարմացվել է՝ ${targetStatus}`);
     }
   };
 
@@ -616,16 +647,13 @@ export default function App() {
         />
 
         {/* Scrollable Main View Canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-8">
+        <main className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar p-3 sm:p-5 lg:p-7 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-8">
           <div className="max-w-[1700px] mx-auto">
             <AnimatePresence mode="wait">
               {activeView === 'orders' && (
                 <motion.div 
                   key="order-list"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0 space-y-4"
                 >
                   <OrderFeed 
@@ -655,10 +683,7 @@ export default function App() {
               {activeView === 'create-order' && (
                 <motion.div
                   key="create-order"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0"
                 >
                   <CreateOrderPage 
@@ -671,10 +696,7 @@ export default function App() {
               {activeView === 'view-order' && (
                 <motion.div
                   key="view-order"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0"
                 >
                   {currentOrder ? (
@@ -708,10 +730,7 @@ export default function App() {
               {activeView === 'edit-order' && (
                 <motion.div
                   key="edit-order"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0"
                 >
                   {currentOrder ? (
@@ -737,10 +756,8 @@ export default function App() {
 
               {activeView === 'dashboard' && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  key="delivery-dashboard"
+                  {...PAGE_VARIANTS}
                 >
                   <DeliveryDashboard orders={orders} />
                 </motion.div>
@@ -749,10 +766,7 @@ export default function App() {
               {activeView === 'json-database' && (
                 <motion.div 
                   key="json-database-page"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0"
                 >
                   <JsonDatabasePage 
@@ -771,10 +785,7 @@ export default function App() {
               {activeView === 'reports' && (
                 <motion.div 
                   key="reports-page"
-                  initial={{ opacity: 0, y: 8, scale: 0.995 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: -6, scale: 0.995 }} 
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  {...PAGE_VARIANTS}
                   className="flex-1 min-h-0"
                 >
                   <ReportsPage 
@@ -842,12 +853,12 @@ export default function App() {
             initial={{ opacity: 0, y: -80, scale: 0.9 }}
             animate={{ opacity: 1, y: 16, scale: 1 }}
             exit={{ opacity: 0, y: -40, scale: 0.93 }}
-            transition={{ type: "spring", damping: 20, stiffness: 260 }}
+            transition={{ type: "spring", damping: 30, stiffness: 460, mass: 0.9 }}
             role="status"
             aria-live="polite"
             className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-[380px] px-4"
           >
-            <div className="glass-card shadow-xl rounded-xl p-1.5 flex gap-1 text-left">
+            <div className="glass-card shadow-popover rounded-xl p-1.5 flex gap-1 text-left">
               <button
                 type="button"
                 onClick={() => {
@@ -860,9 +871,9 @@ export default function App() {
                   }
                   setActiveBannerNotification(null);
                 }}
-                className="flex-1 min-w-0 flex gap-3 text-left items-start cursor-pointer rounded-lg p-2 transition-colors hover:bg-slate-50"
+                className="flex-1 min-w-0 flex gap-3 text-left items-start cursor-pointer rounded-lg p-2 row-interactive"
               >
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-[inset_0_1px_0_var(--fill-highlight)] ${
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-fill ${
                   activeBannerNotification.type === 'success' ? 'bg-success' :
                   activeBannerNotification.type === 'warning' ? 'bg-danger' :
                   'bg-primary'
@@ -903,6 +914,33 @@ export default function App() {
 
       {/* Global Toast System */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Branded boot preloader — fades out once the initial dataset is ready */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            key="app-preloader"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.01 }}
+            transition={{ duration: 0.32, ease: EASE_PREMIUM }}
+            className="fixed inset-0 z-[10000] flex flex-col items-center justify-center gap-6 bg-[var(--app-bg)]"
+          >
+            <div className="flex items-center gap-3 animate-rise-in">
+              <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center text-white text-lg font-bold shadow-fill">
+                Տ
+              </div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                Tab<span className="text-primary-ink">CRM</span>
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-4 animate-rise-in" style={{ animationDelay: '80ms' }}>
+              <div className="preloader-ring h-7 w-7" aria-label="Բեռնում է" />
+              <div className="preloader-bar w-28" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

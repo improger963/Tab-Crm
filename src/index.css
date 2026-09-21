@@ -2,11 +2,13 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   TabCRM Design System — v2
+   TabCRM Design System — v3
    - Semantic token layer (--color-*) driving every utility class, so the
      whole UI inverts cleanly in dark mode (html.dark) with zero logic changes.
    - Type scale: 2xs(10) xs(11) sm(12) base(13) lg(14) xl(18) 2xl(22) 3xl(30)
    - Spacing: 4px base grid (native Tailwind scale) — no off-grid fractions.
+   - Motion: ONE easing language (v3). Every CSS transition in the app rides
+     --default-transition-* so hover/press/open states share a single feel.
    ========================================================================== */
 
 @theme {
@@ -149,17 +151,76 @@
   --shadow-lg: 0 4px 8px -2px rgb(var(--shadow-rgb) / 0.05), 0 12px 28px -6px rgb(var(--shadow-rgb) / 0.10);
   --shadow-xl: 0 8px 16px -4px rgb(var(--shadow-rgb) / 0.07), 0 20px 40px -8px rgb(var(--shadow-rgb) / 0.12);
   --shadow-2xl: 0 28px 56px -12px rgb(var(--shadow-rgb) / 0.18);
+  
+    /* ── Semantic depth tokens (Design System v4) ──────────────────────────
+       Layered elevation: card < raised < popover < modal. --elevation-boost
+       (1 light / 1.9 dark) compensates for black-on-dark shadows reading
+       weaker, so floating planes keep real separation in both themes.
+       Inset hairlines ride inside the tokens — one declaration per surface. */
+    --shadow-card: 0 1px 2px rgb(var(--shadow-rgb) / calc(0.04 * var(--elevation-boost, 1))), 0 2px 8px -2px rgb(var(--shadow-rgb) / calc(0.06 * var(--elevation-boost, 1))), inset 0 1px 0 var(--surface-highlight);
+    --shadow-raised: 0 2px 4px -1px rgb(var(--shadow-rgb) / calc(0.06 * var(--elevation-boost, 1))), 0 12px 28px -8px rgb(var(--shadow-rgb) / calc(0.14 * var(--elevation-boost, 1)));
+    --shadow-popover: 0 4px 12px -4px rgb(var(--shadow-rgb) / calc(0.08 * var(--elevation-boost, 1))), 0 12px 32px -8px rgb(var(--shadow-rgb) / calc(0.16 * var(--elevation-boost, 1)));
+    --shadow-modal: 0 8px 20px -6px rgb(var(--shadow-rgb) / calc(0.12 * var(--elevation-boost, 1))), 0 24px 56px -12px rgb(var(--shadow-rgb) / calc(0.22 * var(--elevation-boost, 1)));
+    /* Elevation for saturated color fills (primary/success/… buttons, logo tiles) */
+    --shadow-fill: 0 1px 2px rgb(var(--shadow-rgb) / 0.12), inset 0 1px 0 var(--fill-highlight);
+    --shadow-fill-strong: 0 3px 10px -2px rgb(var(--shadow-rgb) / 0.24), inset 0 1px 0 var(--fill-highlight);
+    /* Ring + micro-lift for segmented-control active states */
+    --shadow-edge: 0 0 0 1px rgb(var(--shadow-rgb) / 0.05), 0 1px 2px rgb(var(--shadow-rgb) / 0.06);
+    /* Directional casts (bottom nav bar, left drawer) */
+    --shadow-up: 0 -2px 20px rgb(var(--shadow-rgb) / calc(0.06 * var(--elevation-boost, 1)));
+    --shadow-drawer: 4px 0 40px rgb(var(--shadow-rgb) / calc(0.10 * var(--elevation-boost, 1)));
 
   /* Premium radius scale — quiet, consistent corners (8 / 10 / 12 / 14) */
   --radius-lg: 0.5rem;
   --radius-xl: 0.625rem;
   --radius-2xl: 0.75rem;
   --radius-3xl: 0.875rem;
+
+  /* --- Motion tokens (v3) ---
+     --ease-premium is an expo-out curve: fast start, long quiet settle —
+     the "expensive" feel of Linear/Stripe. Redefining the defaults makes
+     every bare `transition-*` utility in the app inherit it automatically. */
+  --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-premium-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-overlay-in: overlay-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-modal-pop: modal-pop 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-drop-in: drop-in 180ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-skeleton-sweep: skeleton-sweep 1.5s ease-in-out infinite;
+  --animate-preloader-spin: preloader-spin 0.85s linear infinite;
+  --animate-rise-in: rise-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes modal-pop {
+    from { opacity: 0; transform: scale(0.965) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes drop-in {
+    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes skeleton-sweep {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes preloader-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
 /* ---- Light theme (default) ---- */
 :root {
   --shadow-rgb: 15 23 42; /* slate-900 */
+  --elevation-boost: 1; /* semantic shadows: light needs almost no compensation */
   --surface-highlight: rgb(255 255 255 / 0.6); /* top edge-lit hairline on cards */
   --fill-highlight: rgb(255 255 255 / 0.14);  /* top hairline on colored fills */
   --surface-card: #ffffff;
@@ -185,6 +246,7 @@
   --scroll-thumb-2: #a5b4fc;
   --scroll-thumb-hover-1: #a5b4fc;
   --scroll-thumb-hover-2: #818cf8;
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 
   --slate-50: #f8fafc;  --slate-100: #f1f5f9; --slate-200: #e2e8f0; --slate-300: #cbd5e1;
   --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569; --slate-700: #334155;
@@ -218,6 +280,7 @@
 /* ---- Dark theme — inverted scales (`.dark` on <html>) ---- */
 .dark {
   --shadow-rgb: 0 0 0;
+  --elevation-boost: 1.9; /* black shadows read weaker on dark — boost floating planes */
   --surface-highlight: rgb(255 255 255 / 0.06);
   --fill-highlight: rgb(255 255 255 / 0.10);
   --surface-card: #161d2c;
@@ -243,6 +306,7 @@
   --scroll-thumb-2: #4338ca;
   --scroll-thumb-hover-1: #4f46e5;
   --scroll-thumb-hover-2: #6366f1;
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2397a4bc' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 
   --slate-50: #121a29;  --slate-100: #1a2334; --slate-200: #27324a; --slate-300: #3b4763;
   --slate-400: #7c8aa5; --slate-500: #97a4bc; --slate-600: #b6c1d4; --slate-700: #cbd4e2;
@@ -334,6 +398,9 @@
     letter-spacing: -0.012em;
     scroll-behavior: smooth;
     color-scheme: light;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb-2) transparent;
+    overscroll-behavior-y: none;
   }
   html.dark {
     color-scheme: dark;
@@ -359,21 +426,67 @@
   *:focus-visible {
     @apply outline-2 outline-offset-2 outline-indigo-500 rounded-md;
   }
+
+  /* Native <option> lists follow the theme instead of flashing OS white */
+  select option, select optgroup {
+    background-color: var(--surface-card);
+    color: var(--slate-900);
+  }
+
+  /* Date inputs: tuck the OS picker icon into the design system */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.5;
+    border-radius: 0.375rem;
+    transition: opacity 150ms var(--ease-premium);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 0.95; }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.72); }
+  input[type="checkbox"], input[type="radio"] { accent-color: var(--primary-fill); }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-surface/[0.97] backdrop-blur-xl border border-slate-200/70 rounded-xl sm:rounded-2xl shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04),0_8px_24px_-8px_rgb(var(--shadow-rgb)/0.10)];
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.04), 0 8px 24px -8px rgb(var(--shadow-rgb) / 0.10), inset 0 1px 0 var(--surface-highlight);
+    @apply bg-surface/[0.97] backdrop-blur-xl border border-slate-200/70 rounded-xl sm:rounded-2xl;
+    box-shadow: var(--shadow-card);
   }
 
   .solid-card {
-    @apply bg-surface border border-slate-200/80 rounded-xl sm:rounded-2xl shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)];
+    @apply bg-surface border border-slate-200/80 rounded-xl sm:rounded-2xl;
+    /* --shadow-card carries the edge-lit inset hairline, which keeps solid
+       cards reading lifted rather than pasted flat, in BOTH themes. */
+    box-shadow: var(--shadow-card);
   }
 
   /* --- Standardized form controls --- */
   .input-field {
     @apply w-full px-3 py-2.5 bg-surface-muted border border-slate-200 rounded-lg text-sm text-slate-900 transition-all duration-150 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary-ink placeholder:text-slate-400 font-medium hover:border-slate-300;
+  }
+
+  /* --- ONE unified custom selector (no native browser chrome anywhere) ---
+     A machined boxed <select> that mirrors .input-field but swaps the OS
+     dropdown arrow for a token caret. .select-field-sm is the compact toolbar
+     variant; utilities (w-auto / font-bold) layered on top still win. */
+  .select-field {
+    @apply appearance-none select-none cursor-pointer w-full pl-3 pr-9 py-2.5 bg-surface-muted border border-slate-200 rounded-lg text-sm text-slate-900 font-medium transition-all duration-150 hover:border-slate-300 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary-ink;
+    background-image: var(--select-caret);
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 0.95rem;
+  }
+  .select-field-sm {
+    @apply w-auto shrink-0 pl-2.5 pr-8 py-1.5 text-xs rounded-lg;
+  }
+
+  /* Caret-only overlay for selectors that live inside an already-bordered pill
+     (transparent bg, keeps surrounding padding) so they drop the native arrow. */
+  .select-caret {
+    @apply appearance-none select-none cursor-pointer;
+    background-image: var(--select-caret);
+    background-repeat: no-repeat;
+    background-position: right 0.05rem center;
+    background-size: 0.9rem;
+    padding-right: 1.15rem;
   }
 
   /* --- Standardized buttons (sm default, md via .btn-md) ---
@@ -384,23 +497,42 @@
   }
   .btn-md { @apply px-4 py-2.5; }
   .btn-primary {
-    @apply bg-primary text-white shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.10)] hover:bg-primary-strong hover:shadow-[0_2px_6px_-1px_rgb(var(--shadow-rgb)/0.18)];
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.10), inset 0 1px 0 var(--fill-highlight);
+    @apply bg-primary text-white hover:bg-primary-strong;
+    box-shadow: var(--shadow-fill);
   }
+  .btn-primary:hover { box-shadow: var(--shadow-fill-strong); }
   .btn-ghost {
     @apply bg-surface border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900;
   }
   .btn-dark {
     @apply bg-ink-inverse text-white;
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.12), inset 0 1px 0 var(--fill-highlight);
+    box-shadow: var(--shadow-fill);
   }
   .btn-danger {
     @apply bg-danger text-white hover:brightness-110;
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.12), inset 0 1px 0 var(--fill-highlight);
+    box-shadow: var(--shadow-fill);
+  }
+  .btn-success {
+    @apply bg-success text-white hover:brightness-110;
+    box-shadow: var(--shadow-fill);
+  }
+  /* Soft tonal secondaries — borderless fills that stay readable in dark mode */
+  .btn-soft {
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900;
+  }
+  .btn-soft-primary {
+    @apply bg-indigo-50 text-primary-ink border border-indigo-200/80 hover:bg-indigo-100;
+  }
+.btn-soft-danger {
+    @apply bg-rose-50/70 text-rose-700 border border-rose-200/70 hover:bg-rose-100 dark:hover:bg-rose-500/20;
+  }
+  /* Soft emerald twin of btn-soft-danger — for confirmative/export actions */
+  .btn-soft-success {
+    @apply bg-emerald-50/70 text-emerald-800 border border-emerald-200/70 hover:bg-emerald-100 dark:hover:bg-emerald-500/20;
   }
   .btn-info {
     @apply bg-info text-white hover:brightness-110;
-    box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.12), inset 0 1px 0 var(--fill-highlight);
+    box-shadow: var(--shadow-fill);
   }
 
   /* --- One section-heading style for every hierarchy level ---
@@ -410,7 +542,7 @@
   }
 
   .kpi-card {
-    @apply relative overflow-hidden p-3 sm:p-3.5 rounded-xl border border-slate-200/80 bg-surface shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)] transition-all duration-200 cursor-pointer;
+    @apply relative overflow-hidden p-3 sm:p-3.5 rounded-xl border border-slate-200/80 bg-surface shadow-card transition-all duration-200 cursor-pointer;
   }
 
   .kpi-card::before {
@@ -434,6 +566,43 @@
   .badge-danger  { @apply bg-rose-50 text-rose-700 border-rose-200/80; }
   .badge-info    { @apply bg-sky-50 text-sky-700 border-sky-200/80; }
 
+  /* --- Clickable mono SKU / order-code chip (feed rows, item tables, dashboard) ---
+     One machined chip instead of six slightly-different hand-rolled variants. */
+  .code-chip {
+    @apply inline-flex items-center gap-1 font-mono text-2xs sm:text-xs font-bold text-primary-ink bg-indigo-50 border border-indigo-200/80 px-1.5 py-px sm:py-0.5 rounded-md shadow-2xs transition-all duration-150 hover:bg-indigo-100 active:scale-[0.97] cursor-pointer;
+  }
+
+  /* Tonal data chips (article numbers, quantities) — theme-safe counterparts
+     of .code-chip so tables don't blow out in dark mode. */
+.amber-chip {
+    @apply inline-flex items-center font-mono text-2xs sm:text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-400/20 px-2 py-0.5 rounded-md;
+  }
+.slate-chip {
+    @apply inline-flex items-center font-mono text-2xs sm:text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md;
+  }
+
+  /* --- Table row / list-item physical hover (theme-safe, one language) --- */
+  .row-interactive {
+    @apply transition-colors duration-150 hover:bg-slate-50/70;
+  }
+
+  /* --- Read-only detail field frame (label + value blocks inside cards) ---
+     One soft inset surface treatment for every info panel, dark-safe. */
+  .field-frame {
+    @apply p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/60 dark:border-slate-700/50;
+  }
+
+  /* --- Modal shell + backdrop (shared chrome for every dialog) --- */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[3px];
+  }
+  .modal-shell {
+    @apply bg-surface rounded-2xl border border-slate-200/80 shadow-modal overflow-hidden flex flex-col;
+  }
+  .modal-header-dark {
+    @apply bg-ink-inverse text-white flex items-center justify-between;
+  }
+
   /* --- ONE unified icon-button / toolbar system --- */
   .icon-btn {
     @apply inline-flex items-center justify-center shrink-0 cursor-pointer rounded-lg border border-slate-200/80 bg-surface p-1.5 text-slate-500 shadow-2xs transition-all duration-150 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
@@ -446,10 +615,78 @@
 
   /* --- ONE unified empty / loading / error state frame --- */
   .state-card {
-    @apply flex flex-col items-center justify-center text-center bg-surface/95 backdrop-blur-xs rounded-xl border border-slate-200/80 p-8 sm:p-12 shadow-[0_1px_2px_rgb(var(--shadow-rgb)/0.04)];
+    @apply flex flex-col items-center justify-center text-center bg-surface/95 backdrop-blur-xs rounded-xl border border-slate-200/80 p-8 sm:p-12 shadow-card;
   }
   .state-icon {
     @apply flex items-center justify-center h-14 w-14 rounded-xl border mb-4;
+  }
+
+  /* --- Skeleton loader (one style for every async fetch) --- */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-slate-100;
+    background-image: linear-gradient(90deg, transparent 25%, rgb(255 255 255 / 0.5) 50%, transparent 75%);
+    background-size: 200% 100%;
+    animation: var(--animate-skeleton-sweep);
+  }
+  .dark .skeleton {
+    background-color: var(--slate-200);
+    background-image: linear-gradient(90deg, transparent 25%, rgb(255 255 255 / 0.06) 50%, transparent 75%);
+  }
+
+  /* --- Physical "lift" for interactive cards / rows (depth on hover) --- */
+  .lift-card {
+    @apply transition-[transform,box-shadow,border-color];
+  }
+  .lift-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Sidebar active nav item: left rule + tokenized micro-lift (no one-off value) */
+  .nav-active {
+    box-shadow: inset 2px 0 0 var(--color-primary), var(--shadow-xs);
+  }
+
+  /* --- App preloader (initial load + route-level fetches) ---
+     Two nested rings in counter-motion: the outer sweeps, the inner breathes —
+     quieter and more precise than a single spinner. */
+  .preloader-ring {
+    @apply relative rounded-full border-2 border-indigo-200;
+    border-top-color: var(--primary-fill);
+    animation: var(--animate-preloader-spin);
+  }
+  /* Breathing inner core — nested counter-motion so the loader reads as two
+     living layers (outer sweeps, inner pulses) instead of one flat spinner. */
+  .preloader-ring::before {
+    content: "";
+    @apply absolute rounded-full bg-primary;
+    inset: 30%;
+    animation: preloader-breathe 1.6s var(--ease-premium) infinite;
+  }
+  .preloader-core {
+    @apply absolute inset-0 m-auto h-2 w-2 rounded-full bg-primary;
+    animation: preloader-breathe 1.6s var(--ease-premium) infinite;
+  }
+  @keyframes preloader-breathe {
+    0%, 100% { transform: scale(0.7); opacity: 0.55; }
+    50% { transform: scale(1); opacity: 1; }
+  }
+  /* One indeterminate "working" hairline for every async op (boot, PDF, JSON) */
+  .preloader-bar {
+    @apply relative h-1 w-full overflow-hidden rounded-full bg-indigo-100;
+  }
+  .dark .preloader-bar {
+    @apply bg-slate-700/60;
+  }
+  .preloader-bar::after {
+    content: "";
+    @apply absolute inset-y-0 rounded-full bg-primary;
+    width: 38%;
+    animation: preloader-slide 1.15s var(--ease-premium) infinite;
+  }
+  @keyframes preloader-slide {
+    0% { left: -38%; }
+    100% { left: 100%; }
   }
 }
 
@@ -506,11 +743,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-.leaflet-container {
-  background: var(--app-bg);
-  font-family: inherit !important;
 }
 
 @media print {

@@ -40,30 +40,9 @@ npm install
 
 ---
 
-## 4. Կարգավորել միջավայրի փոփոխականները (.env)
+## 4. Կարգավորումներ
 
-Ստեղծեք `.env` ֆայլը՝ պատճենելով `.env.example`-ը.
-
-**Mac / Linux:**
-```bash
-cp .env.example .env
-```
-
-**Windows (Command Prompt):**
-```cmd
-copy .env.example .env
-```
-
-**Windows (PowerShell):**
-```powershell
-Copy-Item .env.example .env
-```
-
-Բացեք `.env` ֆայլը և անհրաժեշտության դեպքում լրացրեք ձեր API բանալիները (օրինակ՝ `GEMINI_API_KEY`):
-
-```env
-GEMINI_API_KEY="ձեր_api_բանալին"
-```
+Նախագիծն աշխատում է ամբողջությամբ օֆլայն և չի պահանջում API բանալիներ կամ `.env` կարգավորումներ։ Բոլոր տվյալները պահպանվում են դիտարկչի `localStorage`-ում, իսկ արտադրանքի JSON բեքափերը կատարվում են հավելվածի ներսից (JSON Database էջ)։
 
 ---
 
