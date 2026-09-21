@@ -484,7 +484,7 @@ ${itemsText}`;
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <span className="section-title text-slate-500">
                           Վճարման Պայման՝
                         </span>
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-surface px-2.5 py-1 rounded-lg border border-slate-200">

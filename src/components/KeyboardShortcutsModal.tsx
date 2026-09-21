@@ -66,7 +66,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 onClose();
               }}
               aria-label="Փակել օգնության պատուհանը"
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-150 active:scale-[0.92] cursor-pointer"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>

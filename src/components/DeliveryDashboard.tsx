@@ -240,7 +240,7 @@ export default function DeliveryDashboard({ orders, onSelectOrder }: DeliveryDas
               }}
               className={`px-3.5 py-1.5 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer ${
                 timeFilter === tab.id 
-                  ? 'bg-surface text-indigo-900 shadow-2xs' 
+                  ? 'bg-surface text-slate-900 shadow-edge' 
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >

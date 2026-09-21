@@ -178,7 +178,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                   type="button"
                   onClick={onClose}
                   aria-label="Փակել մենյուն"
-                  className="p-2 -mr-1 text-slate-500 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
+                  className="p-2 -mr-1 text-slate-500 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-all duration-150 active:scale-[0.92] cursor-pointer"
                 >
                   <CloseIcon className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -298,7 +298,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                       onClose();
                       onOpenScanner();
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 transition-all duration-150 active:scale-[0.98] cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <ScanLine className="w-4 h-4 text-primary-ink" />
@@ -313,7 +313,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                       onClose();
                       onExportJson();
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 transition-all duration-150 active:scale-[0.98] cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <Download className="w-4 h-4 text-emerald-700" />
@@ -326,7 +326,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     <button
                       type="button"
                       onClick={toggleSoundMute}
-                      className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                      className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 transition-all duration-150 active:scale-[0.97] cursor-pointer"
                     >
                       {isSoundMuted ? <VolumeX className="w-4 h-4 text-slate-500" /> : <Volume2 className="w-4 h-4 text-primary-ink" />}
                       <span>{isSoundMuted ? 'Ձայնը՝ անջատված' : 'Ձայնը'}</span>
@@ -338,7 +338,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                         onClose();
                         onOpenNotifications();
                       }}
-                      className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                      className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 transition-all duration-150 active:scale-[0.97] cursor-pointer"
                       aria-label={unreadCount > 0 ? `Բացել ծանուցումները (${unreadCount} նոր)` : 'Բացել ծանուցումները'}
                     >
                       <Bell className="w-4 h-4 text-primary-ink" aria-hidden="true" />
@@ -356,7 +356,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     type="button"
                     onClick={onToggleTheme}
                     aria-pressed={theme === 'dark'}
-                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/70 rounded-xl text-xs font-bold text-slate-700 transition-all duration-150 active:scale-[0.98] cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       {theme === 'dark'
@@ -376,7 +376,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                       onClose();
                       onClearAllOrders();
                     }}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-bold transition-all duration-150 active:scale-[0.98] cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4 text-rose-600" aria-hidden="true" />
                     <span>Մաքրել Բոլոր Պատվերները</span>

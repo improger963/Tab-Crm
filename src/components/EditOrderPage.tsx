@@ -891,18 +891,18 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                           placeholder="0"
                           className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-center focus:bg-surface focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
-                        <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-surface">
+                        <div className="segmented-divided">
                           <button
                             type="button"
                             onClick={() => handleItemChange(item.id, 'discountType', 'PERCENT')}
-                            className={`px-1.5 py-1 text-xs font-bold cursor-pointer ${(!item.discountType || item.discountType === 'PERCENT') ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`segmented-divided-item px-1.5 py-1 text-xs ${(!item.discountType || item.discountType === 'PERCENT') ? 'segmented-divided-item-active' : ''}`}
                           >
                             %
                           </button>
                           <button
                             type="button"
                             onClick={() => handleItemChange(item.id, 'discountType', 'FIXED')}
-                            className={`px-1.5 py-1 text-xs font-bold cursor-pointer ${item.discountType === 'FIXED' ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`segmented-divided-item px-1.5 py-1 text-xs ${item.discountType === 'FIXED' ? 'segmented-divided-item-active' : ''}`}
                           >
                             ֏
                           </button>
@@ -930,7 +930,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                         type="button"
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={items.length === 1}
-                        className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-20 cursor-pointer hover:bg-rose-50"
+                        className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg transition-all duration-150 active:scale-[0.92] disabled:opacity-20 cursor-pointer hover:bg-rose-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -966,7 +966,7 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      className="p-1 text-danger-edge hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1 text-danger-edge hover:bg-rose-100 rounded-lg transition-all duration-150 active:scale-[0.92] cursor-pointer"
                       title="Հեռացնել"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1045,18 +1045,18 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                       placeholder="0"
                       className="w-14 px-2 py-1 bg-surface border border-slate-200 rounded-lg text-xs font-mono text-center"
                     />
-                    <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-surface shadow-2xs">
+                    <div className="segmented-divided">
                       <button
                         type="button"
                         onClick={() => handleItemChange(item.id, 'discountType', 'PERCENT')}
-                        className={`px-2 py-1 text-2xs font-bold cursor-pointer ${(!item.discountType || item.discountType === 'PERCENT') ? 'bg-primary text-white' : 'text-slate-600'}`}
+                        className={`segmented-divided-item px-2 py-1 text-2xs ${(!item.discountType || item.discountType === 'PERCENT') ? 'segmented-divided-item-active' : ''}`}
                       >
                         %
                       </button>
                       <button
                         type="button"
                         onClick={() => handleItemChange(item.id, 'discountType', 'FIXED')}
-                        className={`px-2 py-1 text-2xs font-bold cursor-pointer ${item.discountType === 'FIXED' ? 'bg-primary text-white' : 'text-slate-600'}`}
+                        className={`segmented-divided-item px-2 py-1 text-2xs ${item.discountType === 'FIXED' ? 'segmented-divided-item-active' : ''}`}
                       >
                         ֏
                       </button>
@@ -1095,18 +1095,18 @@ export default function EditOrderPage({ order, onSave, onCancel }: EditOrderPage
                 placeholder="0"
                 className="w-24 px-2.5 py-1.5 bg-surface border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 text-center"
               />
-              <div className="flex rounded-lg overflow-hidden border border-slate-200 bg-surface">
+              <div className="segmented-divided">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, discountType: 'PERCENT' }))}
-                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer ${formData.discountType === 'PERCENT' ? 'bg-primary text-white' : 'text-slate-600'}`}
+                  className={`segmented-divided-item px-2.5 py-1 text-xs ${formData.discountType === 'PERCENT' ? 'segmented-divided-item-active' : ''}`}
                 >
                   %
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, discountType: 'FIXED' }))}
-                  className={`px-2.5 py-1 text-xs font-bold cursor-pointer ${formData.discountType === 'FIXED' ? 'bg-primary text-white' : 'text-slate-600'}`}
+                  className={`segmented-divided-item px-2.5 py-1 text-xs ${formData.discountType === 'FIXED' ? 'segmented-divided-item-active' : ''}`}
                 >
                   ֏
                 </button>

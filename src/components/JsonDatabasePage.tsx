@@ -168,26 +168,26 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Պատվերներ</span>
+            <span className="section-title text-slate-500">Ընդհանուր Պատվերներ</span>
             <div className="w-8 h-8 rounded-xl bg-indigo-50 text-primary-ink flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-slate-900 font-mono">{orders.length}</span>
+            <span className="text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums tracking-tight">{orders.length}</span>
             <span className="text-xs text-slate-500 font-medium">հատ</span>
           </div>
         </div>
 
         <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Շրջանառություն</span>
+            <span className="section-title text-slate-500">Ընդհանուր Շրջանառություն</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-bold text-emerald-700 font-mono">
+            <span className="text-xl sm:text-2xl font-bold text-emerald-700 font-mono tabular-nums tracking-tight">
               {totalRevenue.toLocaleString('hy-AM')}
             </span>
             <span className="text-xs font-bold text-slate-500">֏</span>
@@ -196,13 +196,13 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
 
         <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ֆայլի Ծավալը</span>
+            <span className="section-title text-slate-500">Ֆայլի Ծավալը</span>
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
               <HardDrive className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-bold text-slate-900 font-mono">{fileSizeKb}</span>
+            <span className="text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums tracking-tight">{fileSizeKb}</span>
             <span className="text-xs text-slate-500 font-medium">KB</span>
           </div>
           <div className="mt-2.5">
@@ -220,7 +220,7 @@ export const JsonDatabasePage: React.FC<JsonDatabasePageProps> = ({
 
         <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Պահպանման Տիպ</span>
+            <span className="section-title text-slate-500">Պահպանման Տիպ</span>
             <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>

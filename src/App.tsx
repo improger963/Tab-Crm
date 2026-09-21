@@ -903,7 +903,7 @@ export default function App() {
                 type="button"
                 onClick={() => setActiveBannerNotification(null)}
                 aria-label="Փակել ծանուցումը"
-                className="p-1.5 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-900 self-start transition-colors cursor-pointer shrink-0"
+                className="p-1.5 hover:bg-slate-100 rounded-lg h-fit text-slate-400 hover:text-slate-900 self-start transition-all duration-150 active:scale-[0.92] cursor-pointer shrink-0"
               >
                 <CloseIcon className="w-3.5 h-3.5" aria-hidden="true" />
               </button>

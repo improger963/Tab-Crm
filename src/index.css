@@ -535,6 +535,22 @@
     box-shadow: var(--shadow-fill);
   }
 
+  /* --- Segmented control (divided look): joined cells, solid brand active cell.
+     Sizes/padding stay at the call site; states live here so every %/֏-style
+     toggle shares the same press, hover and active language. */
+  .segmented-divided {
+    @apply flex overflow-hidden rounded-lg border border-slate-200 bg-surface select-none shadow-2xs;
+  }
+  .segmented-divided-item {
+    @apply font-bold cursor-pointer transition-all duration-150 active:scale-[0.96] text-slate-600;
+  }
+  .segmented-divided-item:not(.segmented-divided-item-active):hover {
+    @apply bg-slate-100 text-slate-800;
+  }
+  .segmented-divided-item-active {
+    @apply bg-primary text-white;
+  }
+
   /* --- One section-heading style for every hierarchy level ---
      Semibold + tight tracking reads sharper than shouty 900-weight caps. */
   .section-title {

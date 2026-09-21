@@ -86,7 +86,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   type="button"
                   onClick={onClose}
                   aria-label="Փակել ծանուցումները"
-                  className="p-1.5 -mr-1 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md cursor-pointer transition-colors"
+                  className="p-1.5 -mr-1 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md cursor-pointer transition-all duration-150 active:scale-[0.92]"
                 >
                   <CloseIcon className="w-4 h-4" aria-hidden="true" />
                 </button>

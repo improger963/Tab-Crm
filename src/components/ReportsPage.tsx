@@ -626,7 +626,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         {/* Metric 1: Revenue */}
         <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ընդհանուր Հասույթ</span>
+            <span className="section-title text-slate-500">Ընդհանուր Հասույթ</span>
             <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
               <DollarSign className="w-4 h-4" />
             </span>
@@ -646,7 +646,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         {/* Metric 2: Orders Count */}
         <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Պատվերների Քանակ</span>
+            <span className="section-title text-slate-500">Պատվերների Քանակ</span>
             <span className="p-2 bg-indigo-50 text-primary-ink rounded-xl">
               <Layers className="w-4 h-4" />
             </span>
@@ -666,7 +666,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         {/* Metric 3: SKU & Units Total */}
         <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ապրանքների Քանակ</span>
+            <span className="section-title text-slate-500">Ապրանքների Քանակ</span>
             <span className="p-2 bg-amber-50 text-amber-700 rounded-xl">
               <Package className="w-4 h-4" />
             </span>
@@ -686,7 +686,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         {/* Metric 4: Cash vs Card */}
         <div className="bg-surface border border-slate-200/90 rounded-2xl p-4 shadow-xs transition-all hover:-translate-y-px">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Վճարումներ</span>
+            <span className="section-title text-slate-500">Վճարումներ</span>
             <span className="p-2 bg-sky-50 text-sky-700 rounded-xl">
               <Receipt className="w-4 h-4" />
             </span>
@@ -859,7 +859,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
         <div className="flex flex-wrap items-center justify-between gap-3">
           
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+            <span className="section-title text-slate-500 flex items-center gap-1 mr-1">
               <Calendar className="w-3.5 h-3.5 text-primary-ink" />
               <span>Ամսաթիվ՝</span>
             </span>
@@ -916,7 +916,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={() => setZoomLevel(80)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
-                zoomLevel === 80 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 80 ? 'bg-surface shadow-edge text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               80%
@@ -924,7 +924,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={() => setZoomLevel(100)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
-                zoomLevel === 100 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 100 ? 'bg-surface shadow-edge text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               100%
@@ -932,7 +932,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             <button
               onClick={() => setZoomLevel(120)}
               className={`px-2 py-0.5 rounded-lg font-bold cursor-pointer transition-all active:scale-95 ${
-                zoomLevel === 120 ? 'bg-surface shadow-xs text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                zoomLevel === 120 ? 'bg-surface shadow-edge text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               120%
@@ -958,7 +958,7 @@ export default function ReportsPage({ orders, onBackToOrders }: ReportsPageProps
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 transition-all duration-150 active:scale-90 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

@@ -133,7 +133,7 @@ export default function BarcodeScannerModal({
               type="button"
               onClick={onClose}
               aria-label="Փակել սկաները"
-              className="p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-all duration-150 active:scale-[0.92] cursor-pointer"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -197,7 +197,7 @@ export default function BarcodeScannerModal({
                       setMatchResult(null);
                     }}
                     aria-label="Մաքրել կոդը"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 hover:text-slate-900 transition-all duration-150 active:scale-[0.96] cursor-pointer"
                   >
                     Մաքրել
                   </button>

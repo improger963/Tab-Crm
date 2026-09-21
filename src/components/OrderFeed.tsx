@@ -872,7 +872,7 @@ export default function OrderFeed({
                 posAudio.playScanBeep();
                 setViewMode('table');
               }}
-              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'table' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
+              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'table' ? 'bg-surface text-primary-ink shadow-edge' : 'text-slate-400 hover:text-slate-700'}`}
               title="Աղյուսակային տեսք"
             >
               <List className="w-3.5 h-3.5" />
@@ -882,7 +882,7 @@ export default function OrderFeed({
                 posAudio.playScanBeep();
                 setViewMode('grid');
               }}
-              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'grid' ? 'bg-surface text-primary-ink shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
+              className={`p-1.5 rounded-md transition-all active:scale-[0.94] cursor-pointer ${viewMode === 'grid' ? 'bg-surface text-primary-ink shadow-edge' : 'text-slate-400 hover:text-slate-700'}`}
               title="Քարտային տեսք"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
